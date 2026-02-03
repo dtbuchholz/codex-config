@@ -1,6 +1,7 @@
 ---
 name: data-science
-description: Data science methodology for EDA, statistical analysis, modeling, and insights generation.
+description:
+  Data science methodology for EDA, statistical analysis, modeling, and insights generation.
 ---
 
 # Data Science Skill

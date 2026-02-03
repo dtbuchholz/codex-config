@@ -8,8 +8,8 @@ description:
 
 # Ralph Loop
 
-An autonomous development loop for Codex CLI. The key insight: **fresh context per iteration**
-with **file I/O as state**.
+An autonomous development loop for Codex CLI. The key insight: **fresh context per iteration** with
+**file I/O as state**.
 
 ## Core Principles
 
