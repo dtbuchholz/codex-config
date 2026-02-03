@@ -1,0 +1,114 @@
+prefix_rule(
+    pattern = ["mkdir", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["pnpm", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["npm", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["uv", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["git", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["gh", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["ls", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["find", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["jq", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["grep", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["sed", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["awk", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["sort", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["uniq", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["wc", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["tail", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["head", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["tee", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["tree", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["cat", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["touch", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["rm", "*"],
+    decision = "allow"
+)
+
+prefix_rule(
+    pattern = ["rg", "*"],
+    decision = "allow"
+)

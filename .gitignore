@@ -1,0 +1,26 @@
+# Codex local state
+auth.json
+history.jsonl
+log/
+sessions/
+tmp/
+version.json
+models_cache.json
+
+# Logs
+*.log
+logs/
+
+# Caches
+cache/
+
+# Environment overrides
+.env
+.env.local
+.env.*.local
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp

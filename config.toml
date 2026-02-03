@@ -1,0 +1,32 @@
+policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "live" 
+notify = ["python3", "/Users/dtb/.codex/hooks/notify-codex.py"]
+personality = "pragmatic"
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/Users/dtb/pys/airdrop"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/exp/nfl_agent"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/rcl/js-recall"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/rcl/fonts"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/exp/zip_map"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/exp/codebox"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/.claude"]
+trust_level = "trusted"
+
+[projects."/Users/dtb/.codex"]
+trust_level = "trusted"
