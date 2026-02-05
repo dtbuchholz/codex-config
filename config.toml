@@ -1,6 +1,7 @@
 policy = "never"
 sandbox_mode = "workspace-write"
-web_search = "live" 
+web_search = "live"
+model = "gpt-5.3-codex"
 notify = ["python3", "/Users/dtb/.codex/hooks/notify-codex.py"]
 personality = "pragmatic"
 
