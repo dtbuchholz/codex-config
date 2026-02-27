@@ -1,3 +1,4 @@
 #!/bin/sh
 
+./hooks/check-secrets-gitleaks.sh commit || exit 1
 pnpm lint-staged

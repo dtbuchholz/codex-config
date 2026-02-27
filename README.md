@@ -6,6 +6,8 @@ Shared configuration for Codex CLI to ensure consistent tooling, workflows, and 
 
 ```bash
 git clone <repo-url> ~/.codex
+cd ~/.codex
+make setup
 ```
 
 ## What's Included
@@ -23,6 +25,33 @@ Install a notification backend if desired:
 
 - macOS: `brew install terminal-notifier`
 - Linux: `notify-send` (libnotify)
+
+## Secret Scanning
+
+Git hooks enforce secret scanning for both commits and pushes using `gitleaks`:
+
+- `.husky/pre-commit` scans staged changes
+- `.husky/pre-push` scans outgoing commits
+
+Install requirement:
+
+```bash
+make gitleaks-install
+```
+
+If hooks stop working after dependency changes:
+
+```bash
+make hooks-install
+make hooks-verify
+```
+
+Emergency bypass (not recommended):
+
+```bash
+SKIP_GITLEAKS=1 git commit ...
+SKIP_GITLEAKS=1 git push ...
+```
 
 ## Using CODEX.md
 
