@@ -1,0 +1,17 @@
+# Codex local configuration template
+# Copy to config.toml and adjust for your machine:
+#   cp config.toml.template config.toml
+
+policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "live"
+model = "gpt-5.3-codex"
+notify = ["python3", "~/.codex/hooks/notify-codex.py"]
+personality = "pragmatic"
+
+[sandbox_workspace_write]
+network_access = true
+
+# Optional: mark local projects as trusted
+# [projects."/absolute/path/to/repo"]
+# trust_level = "trusted"

@@ -1,4 +1,5 @@
 # Codex local state
+config.toml
 auth.json
 history.jsonl
 log/

@@ -7,8 +7,11 @@ Shared configuration for Codex CLI to ensure consistent tooling, workflows, and 
 ```bash
 git clone <repo-url> ~/.codex
 cd ~/.codex
+make config-init
 make setup
 ```
+
+`config.toml` is machine-local and gitignored. Keep user-specific project trust entries there.
 
 ## What's Included
 
