@@ -1,0 +1,12 @@
+policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+model = "gpt-5.3-codex"
+personality = "pragmatic"
+
+[sandbox_workspace_write]
+network_access = true
+
+[features]
+js_repl = true
+multi_agent = true

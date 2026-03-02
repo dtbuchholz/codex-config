@@ -3,14 +3,19 @@
 #   cp config.toml.template config.toml
 
 policy = "never"
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 web_search = "live"
 model = "gpt-5.3-codex"
-notify = ["python3", "~/.codex/hooks/notify-codex.py"]
 personality = "pragmatic"
+# Optional: a script to send notifications on MacOS
+# notify = ["python3", "~/.codex/hooks/notify-codex.py"]
 
 [sandbox_workspace_write]
 network_access = true
+
+[features]
+js_repl = true
+multi_agent = true
 
 # Optional: mark local projects as trusted
 # [projects."/absolute/path/to/repo"]
