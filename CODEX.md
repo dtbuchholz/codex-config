@@ -110,3 +110,9 @@ Search modes:
 ```
 
 Default to `qmd query` when unsure. Fall back to `rg` for code-level searches in source trees.
+
+For time-scoped recall, use:
+
+```bash
+~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
+```

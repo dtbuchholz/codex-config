@@ -89,6 +89,23 @@ Common collections:
 | `codex-config` | CODEX.md, README, templates, Makefile      |
 | `claude-*`     | Optional Claude collections for cross-tool |
 
+### Temporal Queries
+
+For date/time questions ("what did I do last Tuesday?", "what happened yesterday"), search
+conversation collections first and include an explicit date token when available:
+
+```bash
+~/.codex/scripts/qmd.sh query "2026-02-24 what did I do" -n 8 --md -c codex-conversations -c claude-conversations
+```
+
+Then summarize only matches whose `Session Metadata` timestamps align with the requested date range.
+
+If available, use the deterministic helper:
+
+```bash
+~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
+```
+
 ### Step 3: Read Relevant Files
 
 If results point to a file that needs more context:

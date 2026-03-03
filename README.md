@@ -41,6 +41,13 @@ Typical usage:
 
 Use the wrapper script to avoid Node/NVM path drift across versions.
 
+For date-specific recall from conversation digests:
+
+```bash
+~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
+~/.codex/scripts/qmd-temporal-recall.py "2026-02-24" "qmd node mismatch" --source codex
+```
+
 ## Notifications
 
 This repo wires Codex's native `notify` option to `hooks/notify.sh` via `hooks/notify-codex.py`.
