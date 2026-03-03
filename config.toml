@@ -11,3 +11,6 @@ network_access = true
 [features]
 js_repl = true
 multi_agent = true
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "current-dir", "five-hour-limit"]
