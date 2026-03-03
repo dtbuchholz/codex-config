@@ -34,10 +34,12 @@ make qmd-install
 Typical usage:
 
 ```bash
-qmd search "exact term"
-qmd vsearch "conceptual query"
-qmd query "open-ended question" -n 6 --md
+~/.codex/scripts/qmd.sh search "exact term"
+~/.codex/scripts/qmd.sh vsearch "conceptual query"
+~/.codex/scripts/qmd.sh query "open-ended question" -n 6 --md
 ```
+
+Use the wrapper script to avoid Node/NVM path drift across versions.
 
 ## Notifications
 

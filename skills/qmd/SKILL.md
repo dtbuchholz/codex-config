@@ -21,8 +21,8 @@ from memory files, skill definitions, and configuration docs.
 QMD must be installed and the daemon running:
 
 ```bash
-qmd status        # Check index health
-qmd mcp --http    # Start daemon if not running
+~/.codex/scripts/qmd.sh status        # Check index health
+~/.codex/scripts/qmd.sh mcp --http    # Start daemon if not running
 ```
 
 ## Search Modes
@@ -32,7 +32,7 @@ qmd mcp --http    # Start daemon if not running
 For exact terms, function names, error messages, or known phrases:
 
 ```bash
-qmd search "pre-commit hook gitleaks" -n 5
+~/.codex/scripts/qmd.sh search "pre-commit hook gitleaks" -n 5
 ```
 
 ### 2. Semantic Search (vector similarity)
@@ -40,7 +40,7 @@ qmd search "pre-commit hook gitleaks" -n 5
 For conceptual queries where exact words may differ:
 
 ```bash
-qmd vsearch "how to handle database migrations safely" -n 5
+~/.codex/scripts/qmd.sh vsearch "how to handle database migrations safely" -n 5
 ```
 
 ### 3. Deep Search (hybrid + reranking, best quality)
@@ -48,7 +48,7 @@ qmd vsearch "how to handle database migrations safely" -n 5
 For open-ended questions combining keyword and semantic understanding:
 
 ```bash
-qmd query "authentication patterns across projects" -n 5
+~/.codex/scripts/qmd.sh query "authentication patterns across projects" -n 5
 ```
 
 ## Execution
@@ -71,13 +71,13 @@ Run the appropriate command. Use `--json` when processing results programmatical
 readable output:
 
 ```bash
-qmd query "the user's question" -n 6 --md
+~/.codex/scripts/qmd.sh query "the user's question" -n 6 --md
 ```
 
 To restrict to a specific collection:
 
 ```bash
-qmd query "deployment setup" -n 6 --md -c codex-skills
+~/.codex/scripts/qmd.sh query "deployment setup" -n 6 --md -c codex-skills
 ```
 
 Common collections:
@@ -94,7 +94,7 @@ Common collections:
 If results point to a file that needs more context:
 
 ```bash
-qmd get "codex-skills/path/to/SKILL.md"
+~/.codex/scripts/qmd.sh get "codex-skills/path/to/SKILL.md"
 ```
 
 Or open the file path directly.
