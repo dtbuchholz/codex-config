@@ -89,3 +89,16 @@ gh pr list --repo owner/repo --state all --search "feat"
 - `gh` is already authenticated via `gh auth login`
 - Provides structured data (JSON) that's easier to parse
 - Can access PR diffs, comments, reviews, checks, and more
+
+## Searching Memory & Skills
+
+When finding past decisions, context, or skill documentation, prefer QMD over grep/glob. QMD indexes
+memory files, skills, and config docs for semantic + keyword search.
+
+```bash
+qmd search "exact term"           # keyword search (fastest)
+qmd vsearch "conceptual query"    # vector similarity
+qmd query "open-ended question"   # hybrid with reranking (best quality)
+```
+
+Default to `qmd query` when unsure. Fall back to `rg` for code-level searches in source trees.

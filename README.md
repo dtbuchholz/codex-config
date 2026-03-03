@@ -21,6 +21,24 @@ make setup
 - `policy/` — command allowlist
 - `CODEX.md.template` — project context template
 
+## QMD Search
+
+QMD provides semantic search across skills, memory, and config docs.
+
+Install:
+
+```bash
+make qmd-install
+```
+
+Typical usage:
+
+```bash
+qmd search "exact term"
+qmd vsearch "conceptual query"
+qmd query "open-ended question" -n 6 --md
+```
+
 ## Notifications
 
 This repo wires Codex's native `notify` option to `hooks/notify.sh` via `hooks/notify-codex.py`.
