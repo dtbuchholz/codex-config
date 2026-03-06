@@ -42,3 +42,7 @@ scripts/*.conf
 .vscode/
 .idea/
 *.swp
+.codex-global-state.json
+sqlite/
+vendor_imports/
+scripts/__pycache__/

@@ -2,7 +2,7 @@
 name: ralph-loop
 description:
   Autonomous development loop with fresh context per iteration. Uses an external bash loop that
-  spawns fresh Codex sessions, storing state in files to prevent context drift. Based on the
+  spawns fresh Claude sessions, storing state in files to prevent context drift. Based on the
   original Ralph Wiggum technique by Geoffrey Huntley.
 ---
 
@@ -15,12 +15,12 @@ An autonomous development loop for Codex CLI. The key insight: **fresh context p
 
 ### 1. Fresh Context Per Iteration
 
-Each iteration spawns a **new Codex session**. No transcript accumulation.
+Each iteration spawns a **new Claude session**. No transcript accumulation.
 
 ```
-Iteration 1: codex exec - < task.md → works → exits
-Iteration 2: codex exec - < task.md → sees files from iter 1 → works → exits
-Iteration 3: codex exec - < task.md → sees files from iter 1+2 → works → exits
+Iteration 1: claude -p "task.md" → works → exits
+Iteration 2: claude -p "task.md" → sees files from iter 1 → works → exits
+Iteration 3: claude -p "task.md" → sees files from iter 1+2 → works → exits
 ```
 
 ### 2. File I/O as State
@@ -34,7 +34,7 @@ All state lives in `.ralph/`:
 
 ### 3. Re-Anchoring Every Iteration
 
-Before each iteration, Codex re-reads:
+Before each iteration, Claude re-reads:
 
 - The original task specification
 - Current git state
@@ -152,7 +152,7 @@ cat .ralph/evidence/iter-*.log | tail -50
 
 The loop stops when:
 
-1. Codex outputs `<promise>DONE</promise>` (completion)
+1. Claude outputs `<promise>DONE</promise>` (completion)
 2. Max iterations reached (default: 25)
 3. Max attempts per task exceeded (default: 5)
 4. You press Ctrl+C
@@ -165,7 +165,7 @@ Environment variables:
 - `RALPH_MAX_ATTEMPTS` - Attempts before blocking (default: 5)
 - `RALPH_TIMEOUT` - Seconds per iteration (default: 1800)
 - `RALPH_PROMISE` - Completion promise text (default: DONE)
-- `RALPH_MODEL` - Codex model to use
+- `RALPH_MODEL` - Claude model to use
 
 ## When to Use
 

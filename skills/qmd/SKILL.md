@@ -1,29 +1,34 @@
 ---
 name: qmd
 description: >
-  Search across memory, skills, and docs using QMD semantic search. Use when the user asks to recall
-  past decisions, find relevant context, or search a knowledge base. Requires QMD.
+  Search across project memory, skills, and docs using QMD semantic search. Use when the user asks
+  to recall past decisions, find relevant context, or search their knowledge base. Requires QMD
+  installed; gracefully falls back if unavailable.
 ---
 
 # QMD
 
 Search your indexed knowledge base using QMD (semantic + keyword search). Surfaces relevant context
-from memory files, skill definitions, and configuration docs.
+from project memory files, skill definitions, documentation, and past conversation transcripts.
 
 ## When This Skill Applies
 
 - User explicitly says "/qmd"
 - User asks "what do I know about X?" or "have I dealt with X before?"
-- User wants to find past decisions, patterns, or context across tools/projects
+- User wants to find past decisions, patterns, or context across projects
 
 ## Prerequisites
 
-QMD must be installed and the daemon running:
+QMD must be installed. Check availability before running any search:
 
 ```bash
 ~/.codex/scripts/qmd.sh status        # Check index health
 ~/.codex/scripts/qmd.sh mcp --http    # Start daemon if not running
 ```
+
+If the wrapper exits with code 127 ("No working qmd binary found"), QMD is not installed on this
+machine. **Do not attempt to search** — tell the user QMD is not available and fall back to standard
+tools (Grep, Glob, Read) instead.
 
 ## Search Modes
 
@@ -51,24 +56,37 @@ For open-ended questions combining keyword and semantic understanding:
 ~/.codex/scripts/qmd.sh query "authentication patterns across projects" -n 5
 ```
 
+### 4. Temporal Recall (date-scoped conversations)
+
+For questions about what happened on a specific day. Resolves natural language dates and searches
+conversation transcripts:
+
+```bash
+~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
+```
+
+Accepts: `YYYY-MM-DD`, `today`, `yesterday`, `last Monday`, etc. Use `--source claude`,
+`--source codex`, or `--source both`.
+
 ## Execution
 
 ### Step 1: Understand the Query
 
 Determine which search mode fits:
 
-| Query type       | Mode      | Example                           |
-| ---------------- | --------- | --------------------------------- |
-| Exact term/error | `search`  | "OPENAI_API_KEY", "exit code 126" |
-| Conceptual       | `vsearch` | "how do I handle retries"         |
-| Open-ended       | `query`   | "what testing patterns do I use"  |
+| Query type       | Mode              | Example                              |
+| ---------------- | ----------------- | ------------------------------------ |
+| Exact term/error | `search`          | "ANTHROPIC_API_KEY", "exit code 126" |
+| Conceptual       | `vsearch`         | "how do I handle retries"            |
+| Open-ended       | `query`           | "what testing patterns do I use"     |
+| Date-scoped      | `temporal-recall` | "what did I do last Tuesday"         |
 
-If unsure, default to `query`.
+If unsure, default to `query` (deep search). For questions about specific days, use temporal recall.
 
 ### Step 2: Search
 
-Run the appropriate command. Use `--json` when processing results programmatically, or `--md` for
-readable output:
+Run the appropriate command. Use `--json` for structured output when you need to process results
+programmatically, or `--md` for readable output:
 
 ```bash
 ~/.codex/scripts/qmd.sh query "the user's question" -n 6 --md
@@ -77,56 +95,41 @@ readable output:
 To restrict to a specific collection:
 
 ```bash
-~/.codex/scripts/qmd.sh query "deployment setup" -n 6 --md -c codex-skills
+~/.codex/scripts/qmd.sh query "deployment setup" -n 6 --md -c codex-memory
 ```
 
-Common collections:
+Available collections:
 
-| Collection     | Contains                                   |
-| -------------- | ------------------------------------------ |
-| `codex-memory` | Memory files and rollups                   |
-| `codex-skills` | Skill definitions and references           |
-| `codex-config` | CODEX.md, README, templates, Makefile      |
-| `claude-*`     | Optional Claude collections for cross-tool |
-
-### Temporal Queries
-
-For date/time questions ("what did I do last Tuesday?", "what happened yesterday"), search
-conversation collections first and include an explicit date token when available:
-
-```bash
-~/.codex/scripts/qmd.sh query "2026-02-24 what did I do" -n 8 --md -c codex-conversations -c claude-conversations
-```
-
-Then summarize only matches whose `Session Metadata` timestamps align with the requested date range.
-
-If available, use the deterministic helper:
-
-```bash
-~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
-```
+| Collection             | Contains                                                      |
+| ---------------------- | ------------------------------------------------------------- |
+| `codex-memory`         | Project-specific memory files (learnings, bugs, architecture) |
+| `codex-skills`         | Skill definitions and reference docs                          |
+| `codex-config`         | CODEX.md and README                                           |
+| `codex-conversations`  | Cleaned Codex conversation transcripts                        |
+| `claude-conversations` | Cleaned Claude conversation transcripts                       |
 
 ### Step 3: Read Relevant Files
 
-If results point to a file that needs more context:
+If search results point to a file that needs more context, read it:
 
 ```bash
-~/.codex/scripts/qmd.sh get "codex-skills/path/to/SKILL.md"
+~/.codex/scripts/qmd.sh get "codex-memory/path/to/MEMORY.md"
 ```
 
-Or open the file path directly.
+Or use the file path directly with the Read tool for full content.
 
 ### Step 4: Synthesize
 
 Present findings to the user:
 
-1. Direct answer
-2. Sources (collection + file)
-3. Gaps (what wasn't found)
+1. **Direct answer** — what the search found
+2. **Sources** — which files/collections the information came from
+3. **Gaps** — if the search didn't find what was expected, note it
 
 ## Rules
 
-- Always cite source files when presenting search results
-- If daemon is not running, start it or fall back to stdio usage
-- This skill is read-only; do not modify files during search
-- If no results are found, say so clearly rather than guessing
+- Always cite the source file when presenting information from search results
+- If QMD daemon is not running, start it or fall back to `~/.codex/scripts/qmd.sh search` (slower)
+- Do not modify any files during this skill — it is read-only
+- If no results found, say so clearly rather than guessing
+- For broad queries, search multiple collections or omit the `-c` flag

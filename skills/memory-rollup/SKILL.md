@@ -2,8 +2,7 @@
 name: memory-rollup
 description: >
   Review and maintain Codex CLI memory files. Prunes stale entries, extracts patterns, promotes
-  cross-project learnings to global memory, and updates MEMORY.md files. Run manually or via
-  launchd.
+  cross-project learnings to global memory, and updates MEMORY.md files. Run manually or via cron.
 ---
 
 # Memory Rollup
@@ -17,7 +16,7 @@ Review, prune, and consolidate Codex CLI memory files across projects and global
 
 ## Memory Layout
 
-Codex CLI memory is tracked in two scopes:
+Codex CLI stores memory in two scopes:
 
 - **Global**: `~/.codex/memory/MEMORY.md` (+ topic files) — loaded into every session
 - **Project**: `~/.codex/projects/<project-hash>/memory/MEMORY.md` (+ topic files) — loaded only in
@@ -58,7 +57,7 @@ For each project that has memory files, evaluate:
 1. **Staleness** — Does the entry reference files, APIs, versions, or patterns that may no longer
    exist? Check against the project's current state if the project directory is accessible:
    ```bash
-   # Derive project path from the hash (e.g., -Users-dtb-prima → /Users/dtb/prima)
+   # Derive project path from the hash (e.g., -Users-name-project → /Users/name/project)
    # Check if the project directory still exists
    ls -la <derived-path> 2>/dev/null
    ```
@@ -76,7 +75,7 @@ For each project memory file:
 - **Move** detailed notes from MEMORY.md into topic files if MEMORY.md exceeds 150 lines
 - **Keep** MEMORY.md as a concise index pointing to topic files for details
 
-Present proposed changes to the user before applying them. Format as:
+Log proposed changes, then apply them directly. Format the log as:
 
 ```
 ## [Project Name]
@@ -91,8 +90,7 @@ Present proposed changes to the user before applying them. Format as:
 - Version 1.2 → 1.4 (confirmed in package.json)
 ```
 
-**STOP.** Ask the user for approval of proposed changes per project. Do NOT edit files until
-approved.
+Apply all changes immediately after logging them.
 
 ### Step 4: Cross-Project Pattern Extraction
 
@@ -116,18 +114,9 @@ Present candidates:
 - Proposed file: ~/.codex/memory/[topic].md
 ```
 
-**STOP.** Ask the user about global memory candidates. Do NOT write global files until approved.
+Apply global memory changes directly after logging them.
 
-### Step 5: Apply Changes
-
-After user approval:
-
-1. Edit project MEMORY.md files (prune, consolidate, update)
-2. Create/update topic files where content was moved
-3. Create/update global memory files for approved cross-project patterns
-4. Update global `~/.codex/memory/MEMORY.md` index if new topic files were created
-
-### Step 6: Summary
+### Step 5: Summary
 
 Display a final report:
 
@@ -146,7 +135,6 @@ MEMORY.md total lines: ___ (global), ___ avg (project)
 ## Rules
 
 - Never delete a memory file entirely — prune entries, don't remove files
-- Always confirm changes with the user before editing
 - Keep MEMORY.md files under 150 lines (hard cap at 200 due to system prompt truncation)
 - Prefer topic files for detailed notes; MEMORY.md should be an index
 - When unsure if something is stale, ask rather than delete

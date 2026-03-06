@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "qmd": {
-      "command": "/Users/dtb/.codex/scripts/qmd.sh",
+      "command": "qmd",
       "args": ["mcp"]
     }
   }

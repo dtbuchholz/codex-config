@@ -14,10 +14,11 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Iterable
 
 
-QMD_BIN = "/Users/dtb/.codex/scripts/qmd.sh"
+QMD_BIN = str(Path.home() / ".codex" / "scripts" / "qmd.sh")
 WEEKDAYS = {
     "monday": 0,
     "tuesday": 1,

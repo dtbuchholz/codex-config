@@ -41,6 +41,19 @@ Typical usage:
 
 Use the wrapper script to avoid Node/NVM path drift across versions.
 
+MCP config (`.mcp.json`) should use a portable command so it works across machines:
+
+```json
+{
+  "mcpServers": {
+    "qmd": {
+      "command": "qmd",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
 For date-specific recall from conversation digests:
 
 ```bash

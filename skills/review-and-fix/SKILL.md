@@ -41,24 +41,19 @@ git diff --name-only main...HEAD 2>/dev/null || git diff --name-only HEAD~5
 ### Step 2: Read Project Guidelines
 
 ```bash
-# Get CODEX.md for context the reviewer should have (if present)
+# Get CODEX.md for context the reviewer should have
 cat CODEX.md 2>/dev/null || true
 ```
 
-### Step 3: Launch Fresh-Context Review
+### Step 3: Launch Fresh-Context Review Agent
 
-**CRITICAL: Use a fresh Codex session (or a review skill) so the reviewer has NO context from the
-current implementation session.**
+**CRITICAL: Use the Task tool to spawn a sub-agent. This agent has NO context from the current
+session - it only sees what you pass it.**
 
-Preferred options:
-
-1. Run `/pr-review-quick` (or `/pr-review`) and use its findings as the fresh-context review.
-2. Or run a separate Codex process with only the diff + guidelines:
-
-```bash
-codex exec - <<'EOF'
-You are reviewing code changes with NO prior context. You don't know why decisions were made - you
-only see the diff. This is intentional.
+```
+Task (subagent_type: general-purpose, model: sonnet): "
+You are reviewing code changes with NO prior context. You don't know why decisions were made -
+you only see the diff. This is intentional.
 
 ## Project Guidelines (from CODEX.md)
 [paste relevant CODEX.md content]
@@ -71,7 +66,7 @@ only see the diff. This is intentional.
 Review this diff for issues. Be critical but fair. For each issue:
 
 1. Describe the problem
-2. Explain why it's a problem (not just "looks wrong")
+2. Explain why it's a problem (not just 'looks wrong')
 3. Rate confidence (0-100):
    - 90+: Definitely a bug or will cause problems
    - 75-89: Very likely an issue, should fix
@@ -93,7 +88,7 @@ WHY: Explanation of the impact
 If no significant issues: 'No issues found - code looks good.'
 
 End with a 1-2 sentence summary.
-EOF
+"
 ```
 
 ### Step 4: Evaluate Review Findings
