@@ -22,13 +22,13 @@ from project memory files, skill definitions, documentation, and past conversati
 QMD must be installed. Check availability before running any search:
 
 ```bash
-~/.codex/scripts/qmd.sh status        # Check index health
-~/.codex/scripts/qmd.sh mcp --http    # Start daemon if not running
+command -v qmd >/dev/null && qmd --version
+qmd status             # Check index health
+qmd mcp --http         # Start daemon if not running
 ```
 
-If the wrapper exits with code 127 ("No working qmd binary found"), QMD is not installed on this
-machine. **Do not attempt to search** — tell the user QMD is not available and fall back to standard
-tools (Grep, Glob, Read) instead.
+If `qmd` is not available in PATH, QMD is not installed for the active runtime. **Do not attempt to
+search** — tell the user QMD is unavailable and fall back to standard tools (Grep, Glob, Read).
 
 ## Search Modes
 
@@ -37,7 +37,7 @@ tools (Grep, Glob, Read) instead.
 For exact terms, function names, error messages, or known phrases:
 
 ```bash
-~/.codex/scripts/qmd.sh search "pre-commit hook gitleaks" -n 5
+qmd search "pre-commit hook gitleaks" -n 5
 ```
 
 ### 2. Semantic Search (vector similarity)
@@ -45,7 +45,7 @@ For exact terms, function names, error messages, or known phrases:
 For conceptual queries where exact words may differ:
 
 ```bash
-~/.codex/scripts/qmd.sh vsearch "how to handle database migrations safely" -n 5
+qmd vsearch "how to handle database migrations safely" -n 5
 ```
 
 ### 3. Deep Search (hybrid + reranking, best quality)
@@ -53,7 +53,7 @@ For conceptual queries where exact words may differ:
 For open-ended questions combining keyword and semantic understanding:
 
 ```bash
-~/.codex/scripts/qmd.sh query "authentication patterns across projects" -n 5
+qmd query "authentication patterns across projects" -n 5
 ```
 
 ### 4. Temporal Recall (date-scoped conversations)
@@ -89,13 +89,13 @@ Run the appropriate command. Use `--json` for structured output when you need to
 programmatically, or `--md` for readable output:
 
 ```bash
-~/.codex/scripts/qmd.sh query "the user's question" -n 6 --md
+qmd query "the user's question" -n 6 --md
 ```
 
 To restrict to a specific collection:
 
 ```bash
-~/.codex/scripts/qmd.sh query "deployment setup" -n 6 --md -c codex-memory
+qmd query "deployment setup" -n 6 --md -c codex-memory
 ```
 
 Available collections:
@@ -113,7 +113,7 @@ Available collections:
 If search results point to a file that needs more context, read it:
 
 ```bash
-~/.codex/scripts/qmd.sh get "codex-memory/path/to/MEMORY.md"
+qmd get "codex-memory/path/to/MEMORY.md"
 ```
 
 Or use the file path directly with the Read tool for full content.
@@ -129,7 +129,7 @@ Present findings to the user:
 ## Rules
 
 - Always cite the source file when presenting information from search results
-- If QMD daemon is not running, start it or fall back to `~/.codex/scripts/qmd.sh search` (slower)
+- If QMD daemon is not running, start it or fall back to `qmd search` (slower)
 - Do not modify any files during this skill — it is read-only
 - If no results found, say so clearly rather than guessing
 - For broad queries, search multiple collections or omit the `-c` flag

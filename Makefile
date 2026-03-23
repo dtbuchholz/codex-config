@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help setup deps config-init hooks-install hooks-verify gitleaks-install qmd-install
+.PHONY: help setup deps config-init hooks-install hooks-verify gitleaks-install qmd-install dev-loop skills-lint
 
 help:
 	@echo "Available targets:"
@@ -11,6 +11,8 @@ help:
 	@echo "  make hooks-verify      Verify expected hook files exist"
 	@echo "  make gitleaks-install  Install gitleaks via Homebrew (macOS)"
 	@echo "  make qmd-install       Install QMD via npm"
+	@echo "  make dev-loop          Run Claude->Codex dev loop (set PROJECT= and SPEC= as needed)"
+	@echo "  make skills-lint       Check skills for legacy Task/AskUserQuestion wording"
 
 setup: deps hooks-install
 
@@ -36,3 +38,12 @@ gitleaks-install:
 qmd-install:
 	@command -v npm >/dev/null 2>&1 || (echo "npm not found. Install Node.js/npm first." && exit 1)
 	@npm install -g @tobilu/qmd
+
+dev-loop:
+	@PROJECT_DIR=$${PROJECT:-$$(pwd)}; \
+	SPEC_FILE=$${SPEC:-$$PROJECT_DIR/SPEC.md}; \
+	~/.codex/scripts/dev-loop.sh -C "$$PROJECT_DIR" -s "$$SPEC_FILE"
+
+skills-lint:
+	@! rg -n "Task \\(|Task tool|AskUserQuestion" skills/*/SKILL.md -S >/dev/null
+	@echo "Skill lint passed."

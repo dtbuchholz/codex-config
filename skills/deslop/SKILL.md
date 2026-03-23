@@ -57,12 +57,13 @@ git diff main...HEAD --name-only 2>/dev/null || git diff HEAD~5 --name-only
 
 ### Step 2: Launch Parallel Detection Agents
 
-**Launch ALL agents in a SINGLE message.** Use `model: haiku` for fast, cheap detection.
+**Launch ALL detection agents in one parallel wave using `spawn_agent` with
+`agent_type: explorer`.**
 
 For EACH changed file, spawn a detection agent:
 
 ```
-Task (model: haiku): "SLOP DETECTION for [filename]
+spawn_agent(agent_type="explorer", message="SLOP DETECTION for [filename]
 
 Analyze this file for AI-generated slop patterns. Read the file and identify:
 
@@ -92,6 +93,7 @@ Output format:
 LINE [n]: [slop type] - [what to remove/change]
 
 If no slop found: 'Clean'"
+")
 ```
 
 ### Step 3: Collect and Apply Fixes
@@ -99,7 +101,8 @@ If no slop found: 'Clean'"
 After all detection agents complete:
 
 1. Collect all findings by file
-2. For each file with findings, apply the edits using the Edit tool
+2. For each file with findings, apply edits yourself OR delegate edits to `worker` agents with
+   explicit file ownership
 3. Keep changes minimal - only remove clear slop
 
 ## Slop Patterns Reference

@@ -46,7 +46,7 @@ print(f"Sample:\n{df.head()}")
 
 ### Step 2: Ask Analysis Questions
 
-Use AskUserQuestion to clarify:
+Ask the user directly to clarify:
 
 1. **Analysis goal**: "What question are you trying to answer with this data?"
    - Exploratory analysis (understand the data)
@@ -61,10 +61,10 @@ Use AskUserQuestion to clarify:
 
 ### Step 3: Launch Parallel Analysis Agents
 
-**CRITICAL: Launch ALL agents in a SINGLE message.**
+**CRITICAL: Launch independent analysis agents via `spawn_agent` with `agent_type: explorer`.**
 
 ```
-Task (model: haiku, subagent_type: general-purpose): "DISTRIBUTION ANALYSIS
+spawn_agent(agent_type="explorer", message="DISTRIBUTION ANALYSIS
 
 Analyze distributions for this dataset:
 - Load: [data_path]
@@ -76,9 +76,9 @@ Analyze distributions for this dataset:
 Output:
 - Table of distribution stats
 - List of columns needing transformation
-- Anomalies found"
+- Anomalies found")
 
-Task (model: haiku, subagent_type: general-purpose): "MISSING DATA ANALYSIS
+spawn_agent(agent_type="explorer", message="MISSING DATA ANALYSIS
 
 Analyze missing data patterns:
 - Load: [data_path]
@@ -90,9 +90,9 @@ Analyze missing data patterns:
 Output:
 - Missing data summary table
 - Pattern analysis
-- Imputation recommendations"
+- Imputation recommendations")
 
-Task (model: haiku, subagent_type: general-purpose): "CORRELATION ANALYSIS
+spawn_agent(agent_type="explorer", message="CORRELATION ANALYSIS
 
 Analyze relationships:
 - Load: [data_path]
@@ -104,9 +104,9 @@ Analyze relationships:
 Output:
 - Top 10 correlations
 - Multicollinearity warnings
-- Feature importance ranking (if target)"
+- Feature importance ranking (if target)")
 
-Task (model: haiku, subagent_type: general-purpose): "OUTLIER ANALYSIS
+spawn_agent(agent_type="explorer", message="OUTLIER ANALYSIS
 
 Detect outliers:
 - Load: [data_path]
@@ -118,9 +118,9 @@ Detect outliers:
 Output:
 - Outlier counts per column
 - Most extreme values
-- Recommended handling"
+- Recommended handling")
 
-Task (model: sonnet, subagent_type: general-purpose): "VISUALIZATION GENERATION
+spawn_agent(agent_type="explorer", message="VISUALIZATION GENERATION
 
 Create key visualizations:
 - Load: [data_path]
@@ -132,7 +132,7 @@ Create key visualizations:
 
 Save plots to: ./analysis_output/
 Use: matplotlib, seaborn
-Output: List of generated plot files"
+Output: List of generated plot files")
 ```
 
 ### Step 4: If Predictive Modeling Requested
@@ -140,7 +140,7 @@ Output: List of generated plot files"
 Launch additional modeling agents:
 
 ```
-Task (model: sonnet, subagent_type: general-purpose): "BASELINE MODELING
+spawn_agent(agent_type="explorer", message="BASELINE MODELING
 
 Build baseline models:
 - Load: [data_path]
@@ -154,9 +154,9 @@ Report:
 - Baseline performance
 - Simple model performance
 - Feature importances from tree model
-- Recommended next steps"
+- Recommended next steps")
 
-Task (model: haiku, subagent_type: general-purpose): "FEATURE ENGINEERING SUGGESTIONS
+spawn_agent(agent_type="explorer", message="FEATURE ENGINEERING SUGGESTIONS
 
 Based on data profile, suggest features:
 - Log transforms for skewed numerics
@@ -166,8 +166,14 @@ Based on data profile, suggest features:
 - Encoding strategies for categoricals
 - Aggregation features if hierarchical data
 
-Output: Prioritized list of feature engineering ideas"
+Output: Prioritized list of feature engineering ideas")
 ```
+
+Execution discipline:
+
+- Dispatch all explorers first, then wait once for results.
+- For large datasets, prefer sampling or partitioned analysis prompts to keep runtime bounded.
+- Parent agent owns synthesis and final report writing.
 
 ### Step 5: Synthesize Results
 

@@ -67,7 +67,7 @@ cat CODEX.md 2>/dev/null || true
 Extract relevant guidelines that apply to code review (not all instructions apply - focus on code
 style, patterns, and conventions).
 
-### 3. Launch Review Agents
+### 3. Launch Review Agents (Codex Sub-Agents)
 
 **CRITICAL INSTRUCTION FOR ALL AGENTS:**
 
@@ -87,10 +87,16 @@ The diff shows + for added lines and - for removed lines. Only flag issues on + 
 
 **Parallel** (with `parallel` arg): Launch all at once for speed
 
-For each agent, use the Task tool with this template:
+Use `spawn_agent` with `agent_type: explorer` for read-only review tasks.
+
+If the diff is too large to pass in one prompt, split by changed file and send per-file diff chunks
+to separate explorers, then merge results.
+
+For each agent, use this template:
 
 ```
-Task (subagent_type: general-purpose): "[AGENT_NAME] REVIEW
+spawn_agent(agent_type="explorer", message="
+[AGENT_NAME] REVIEW
 
 CRITICAL: Only report issues on lines ADDED or MODIFIED in this diff (+ lines).
 Do NOT report pre-existing issues or problems in unchanged code.
@@ -114,8 +120,14 @@ For each issue found, provide:
    - 91-100: Definitely a bug/problem, confirmed with evidence
 
 Output format:
-[CONFIDENCE: XX] file:line - description"
+[CONFIDENCE: XX] file:line - description")
 ```
+
+Execution discipline:
+
+- Launch independent explorers in parallel.
+- Use `wait` only after all review prompts are dispatched.
+- Do not delegate synthesis; parent agent owns final filtering and summary.
 
 ### 4. Filter Results
 

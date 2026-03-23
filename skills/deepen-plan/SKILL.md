@@ -99,20 +99,18 @@ For each learning file:
 
 ### 4. Launch Parallel Research Agents
 
-**CRITICAL: Launch ALL research in a SINGLE message with multiple Task tool calls.**
+**CRITICAL: Launch ALL independent research with `spawn_agent` (`agent_type: explorer`).**
 
 Based on the plan's technologies and sections, spawn these agents IN PARALLEL:
 
 ```
-Task (model: haiku, subagent_type: Explore): "Research best practices for: [technology 1]
+spawn_agent(agent_type="explorer", message="Research best practices for: [technology 1]
 Find: industry standards, performance tips, common pitfalls, documentation.
-Return concrete, actionable recommendations."
+Return concrete, actionable recommendations.")
 
-Task (model: haiku, subagent_type: Explore): "Research best practices for: [technology 2]
-..."
+spawn_agent(agent_type="explorer", message="Research best practices for: [technology 2] ...")
 
-Task (model: haiku, subagent_type: Explore): "Research implementation patterns for: [section topic]
-..."
+spawn_agent(agent_type="explorer", message="Research implementation patterns for: [section topic] ...")
 ```
 
 **Spawn one agent per:**
@@ -133,43 +131,43 @@ find ~/.codex -path "*/agents/*.md" 2>/dev/null
 find .codex/agents -name "*.md" 2>/dev/null
 ```
 
-**Launch ALL review agents in a SINGLE message with multiple Task tool calls.**
+**Launch ALL review agents in parallel using `spawn_agent` with `agent_type: explorer`.**
 
-Use `model: haiku` for each reviewer to keep costs low:
+Use concise prompts for each reviewer:
 
 ```
-Task (model: haiku, subagent_type: general-purpose): "ARCHITECTURE REVIEW
+spawn_agent(agent_type="explorer", message="ARCHITECTURE REVIEW
 Review this plan for architectural concerns:
 - Scalability issues
 - Coupling problems
 - Missing components
-Plan: [content]"
+Plan: [content]")
 
-Task (model: haiku, subagent_type: general-purpose): "SECURITY REVIEW
+spawn_agent(agent_type="explorer", message="SECURITY REVIEW
 Review this plan for security concerns:
 - Auth/authz gaps
 - Data exposure risks
 - Input validation
-Plan: [content]"
+Plan: [content]")
 
-Task (model: haiku, subagent_type: general-purpose): "SIMPLICITY REVIEW
+spawn_agent(agent_type="explorer", message="SIMPLICITY REVIEW
 Review this plan for over-engineering:
 - Unnecessary complexity
 - Simpler alternatives
 - YAGNI violations
-Plan: [content]"
+Plan: [content]")
 
-Task (model: haiku, subagent_type: general-purpose): "TESTABILITY REVIEW
+spawn_agent(agent_type="explorer", message="TESTABILITY REVIEW
 Review this plan for testing concerns:
 - Hard-to-test patterns
 - Missing test strategies
 - Edge cases to cover
-Plan: [content]"
+Plan: [content]")
 ```
 
 **Rules:**
 
-- Launch ALL agents in a SINGLE message
+- Launch independent agents in one parallel wave, then wait once
 - Each agent catches different issues
 - Don't filter by "relevance" - run them all
 

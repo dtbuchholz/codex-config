@@ -1,9 +1,10 @@
-policy = "never"
+approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
 model = "gpt-5.3-codex"
 personality = "pragmatic"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
 
 [sandbox_workspace_write]
 network_access = true
@@ -14,3 +15,9 @@ multi_agent = true
 
 [tui]
 status_line = ["model-with-reasoning", "context-remaining", "current-dir", "five-hour-limit"]
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"

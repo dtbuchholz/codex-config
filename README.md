@@ -34,12 +34,10 @@ make qmd-install
 Typical usage:
 
 ```bash
-~/.codex/scripts/qmd.sh search "exact term"
-~/.codex/scripts/qmd.sh vsearch "conceptual query"
-~/.codex/scripts/qmd.sh query "open-ended question" -n 6 --md
+qmd search "exact term"
+qmd vsearch "conceptual query"
+qmd query "open-ended question" -n 6 --md
 ```
-
-Use the wrapper script to avoid Node/NVM path drift across versions.
 
 MCP config (`.mcp.json`) should use a portable command so it works across machines:
 
@@ -59,6 +57,41 @@ For date-specific recall from conversation digests:
 ```bash
 ~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5
 ~/.codex/scripts/qmd-temporal-recall.py "2026-02-24" "qmd node mismatch" --source codex
+```
+
+## Dev Loop (Claude + Codex)
+
+Use a thin orchestrator to automate:
+
+1. Claude implementation from spec
+2. Codex review of current diff
+3. Claude application of review fixes
+4. Claude final holistic review
+
+Run with defaults (`PROJECT=$(pwd)`, `SPEC=<project>/SPEC.md`):
+
+```bash
+make dev-loop
+```
+
+Or run directly:
+
+```bash
+~/.codex/scripts/dev-loop.sh -C /path/to/repo -s /path/to/repo/SPEC.md
+```
+
+Useful flags:
+
+```bash
+~/.codex/scripts/dev-loop.sh --skip-implement
+~/.codex/scripts/dev-loop.sh --skip-fix
+~/.codex/scripts/dev-loop.sh --max-diff-chars 40000
+```
+
+Artifacts are written under:
+
+```text
+<project>/.dev-loop/
 ```
 
 ## Notifications
@@ -87,6 +120,7 @@ If hooks stop working after dependency changes:
 ```bash
 make hooks-install
 make hooks-verify
+make skills-lint
 ```
 
 Emergency bypass (not recommended):

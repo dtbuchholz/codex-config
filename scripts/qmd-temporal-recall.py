@@ -14,11 +14,10 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Iterable
 
 
-QMD_BIN = str(Path.home() / ".codex" / "scripts" / "qmd.sh")
+QMD_BIN = "qmd"
 WEEKDAYS = {
     "monday": 0,
     "tuesday": 1,
@@ -74,7 +73,10 @@ def normalize_date_phrase(phrase: str, today: date | None = None) -> str:
 
 def list_collection_paths(collection: str) -> list[str]:
     cmd = [QMD_BIN, "ls", collection]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError("qmd CLI not found in PATH. Install QMD and retry.") from exc
     if proc.returncode != 0:
         raise RuntimeError(f"qmd ls failed for {collection}: {proc.stderr.strip()}")
 
@@ -116,7 +118,10 @@ def rank_hits(query: str, hits: Iterable[Hit]) -> list[Hit]:
 
 def qmd_get(path: str) -> str:
     cmd = [QMD_BIN, "get", path, "-l", "220"]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        return ""
     if proc.returncode != 0:
         return ""
     return proc.stdout

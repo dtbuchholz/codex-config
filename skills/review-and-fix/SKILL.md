@@ -47,11 +47,11 @@ cat CODEX.md 2>/dev/null || true
 
 ### Step 3: Launch Fresh-Context Review Agent
 
-**CRITICAL: Use the Task tool to spawn a sub-agent. This agent has NO context from the current
-session - it only sees what you pass it.**
+**CRITICAL: Use `spawn_agent` with `agent_type: explorer` to create a fresh-context reviewer.** This
+reviewer has NO implementation context beyond what you pass it.
 
 ```
-Task (subagent_type: general-purpose, model: sonnet): "
+spawn_agent(agent_type="explorer", message="
 You are reviewing code changes with NO prior context. You don't know why decisions were made -
 you only see the diff. This is intentional.
 
@@ -88,8 +88,14 @@ WHY: Explanation of the impact
 If no significant issues: 'No issues found - code looks good.'
 
 End with a 1-2 sentence summary.
-"
+")
 ```
+
+Execution discipline:
+
+- Keep review agent read-only (`explorer`).
+- If diff is very large, split by file/chunk and launch multiple explorers in parallel.
+- Parent agent evaluates findings and decides fixes.
 
 ### Step 4: Evaluate Review Findings
 
@@ -119,6 +125,9 @@ Do NOT fix:
 - Low-confidence nitpicks unless you agree
 - Style preferences not in CODEX.md
 - "Improvements" that change intended behavior
+
+If delegating code changes, use `spawn_agent` with `agent_type: worker` and assign explicit file
+ownership per worker to avoid conflicts.
 
 ### Step 6: Commit Changes
 

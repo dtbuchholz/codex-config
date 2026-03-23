@@ -30,9 +30,9 @@ git diff main...HEAD 2>/dev/null || git diff HEAD~3
 
 ### Step 2: Launch Parallel Review Agents
 
-**CRITICAL: Launch ALL of these agents in a SINGLE message with multiple Task tool calls.**
+**CRITICAL: Launch ALL of these agents in a SINGLE wave using `spawn_agent` calls.**
 
-Use `model: haiku` for each agent to keep costs low.
+Use `agent_type: explorer` for each review agent (read-only). Keep prompts short and focused.
 
 **Every agent MUST receive this instruction:**
 
@@ -42,7 +42,8 @@ Do NOT report pre-existing issues in unchanged code.
 ```
 
 ```
-Task (model: haiku): "SECURITY REVIEW
+spawn_agent(agent_type="explorer", message="
+SECURITY REVIEW
 
 CRITICAL: Only flag issues on ADDED/MODIFIED lines (+ lines in diff). Ignore pre-existing code.
 
@@ -58,11 +59,12 @@ Diff:
 Output format (only for issues with confidence ≥ 75%):
 [HIGH/MEDIUM/LOW] file:line - description
 
-If no high-confidence issues: 'No security issues found'"
+If no high-confidence issues: 'No security issues found'")
 ```
 
 ```
-Task (model: haiku): "BUG REVIEW
+spawn_agent(agent_type="explorer", message="
+BUG REVIEW
 
 CRITICAL: Only flag issues on ADDED/MODIFIED lines (+ lines in diff). Ignore pre-existing code.
 
@@ -79,11 +81,12 @@ Diff:
 Output format (only for issues with confidence ≥ 75%):
 [HIGH/MEDIUM/LOW] file:line - description
 
-If no high-confidence issues: 'No bugs found'"
+If no high-confidence issues: 'No bugs found'")
 ```
 
 ```
-Task (model: haiku): "PERFORMANCE REVIEW
+spawn_agent(agent_type="explorer", message="
+PERFORMANCE REVIEW
 
 CRITICAL: Only flag issues on ADDED/MODIFIED lines (+ lines in diff). Ignore pre-existing code.
 
@@ -100,11 +103,12 @@ Diff:
 Output format (only for issues with confidence ≥ 75%):
 [HIGH/MEDIUM/LOW] file:line - description
 
-If no high-confidence issues: 'No performance issues found'"
+If no high-confidence issues: 'No performance issues found'")
 ```
 
 ```
-Task (model: haiku): "CODE QUALITY REVIEW
+spawn_agent(agent_type="explorer", message="
+CODE QUALITY REVIEW
 
 CRITICAL: Only flag issues on ADDED/MODIFIED lines (+ lines in diff). Ignore pre-existing code.
 
@@ -121,8 +125,14 @@ Diff:
 Output format (only for issues with confidence ≥ 75%):
 [HIGH/MEDIUM/LOW] file:line - description
 
-If no high-confidence issues: 'No quality issues found'"
+If no high-confidence issues: 'No quality issues found'")
 ```
+
+Execution discipline:
+
+- Dispatch all explorer agents first, then `wait` once for completion.
+- If diff is large, split by file/chunk before dispatching.
+- Parent agent owns filtering and final output.
 
 ### Step 3: Synthesize Results
 
