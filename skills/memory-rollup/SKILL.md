@@ -16,75 +16,76 @@ Review, prune, and consolidate Codex CLI memory files across projects and global
 
 ## Memory Layout
 
-Codex CLI stores memory in two scopes:
+The current Codex CLI memory store lives under `~/.codex/memories/`:
 
-- **Global**: `~/.codex/memory/MEMORY.md` (+ topic files) — loaded into every session
-- **Project**: `~/.codex/projects/<project-hash>/memory/MEMORY.md` (+ topic files) — loaded only in
-  that project's sessions
+- `~/.codex/memories/MEMORY.md` — searchable registry of detailed task-group memory
+- `~/.codex/memories/memory_summary.md` — concise cross-project summary intended for prompt loading
+- `~/.codex/memories/raw_memories.md` — raw extracted source material used to build the registry
+- `~/.codex/memories/rollout_summaries/` — per-rollout summary files referenced from `MEMORY.md`
 
-MEMORY.md files are auto-loaded into the system prompt. Lines after 200 are truncated, so they must
-stay concise. Topic files (e.g., `debugging.md`, `patterns.md`) are not auto-loaded but can be read
-on demand.
+Treat `memory_summary.md` as the prompt-budgeted surface. Keep it concise. `MEMORY.md` is allowed to
+be more detailed, but should still remain organized and easy to search.
 
 ## Execution
 
 ### Step 1: Discover
 
-Scan for all memory files:
+Inspect the current memory store:
 
 ```bash
-# Global memory
-ls -la ~/.codex/memory/ 2>/dev/null
+# Current memory root
+ls -la ~/.codex/memories/ 2>/dev/null
 
-# All project memory directories with content
-for d in ~/.codex/projects/*/memory/; do
-  if [ -d "$d" ] && [ "$(ls -A "$d" 2>/dev/null)" ]; then
-    echo "=== $d ==="
-    ls -la "$d"
-  fi
-done
+# Inventory files
+find ~/.codex/memories -maxdepth 2 -type f | sort
 ```
 
-Read every MEMORY.md and topic file found. Build an inventory:
+Read the registry, summary, and any referenced rollout summaries needed for spot checks. Build an
+inventory:
 
-| Project | MEMORY.md | Topic Files | Line Count | Last Modified |
-| ------- | --------- | ----------- | ---------- | ------------- |
+| File | Purpose | Line Count | Last Modified |
+| ---- | ------- | ---------- | ------------- |
 
-### Step 2: Audit Each Project's Memory
+### Step 2: Audit the Registry and Summaries
 
-For each project that has memory files, evaluate:
+Evaluate:
 
-1. **Staleness** — Does the entry reference files, APIs, versions, or patterns that may no longer
-   exist? Check against the project's current state if the project directory is accessible:
+1. **Staleness** — Do referenced repos, files, commands, or workflow claims still match reality?
+   Spot check against the current workspace when accessible:
    ```bash
-   # Derive project path from the hash (e.g., -Users-name-project → /Users/name/project)
-   # Check if the project directory still exists
-   ls -la <derived-path> 2>/dev/null
+   # Example checks
+   ls -la /Users/dtb/rcl/replay-lab 2>/dev/null
+   ls -la /Users/dtb/.codex/scripts/memory-rollup.sh 2>/dev/null
    ```
-2. **Accuracy** — Do version numbers, file paths, or command references still match reality? Spot
-   check 2–3 concrete claims per file (e.g., does that file still exist at that line number?).
-3. **Density** — Is the MEMORY.md under 200 lines? Is information well-organized or rambling?
-4. **Duplication** — Are entries repeated across MEMORY.md and topic files, or across projects?
+2. **Accuracy** — Do paths, script names, and status claims still match the current repo state? Spot
+   check 2–3 concrete claims per major task group.
+3. **Density** — Is `memory_summary.md` concise enough for prompt loading? Is `MEMORY.md` organized
+   enough to search without carrying duplicate detail?
+4. **Duplication** — Are the same learnings repeated across task groups when they should be promoted
+   into `memory_summary.md` or a single shared section?
 
 ### Step 3: Prune and Consolidate
 
-For each project memory file:
+For the current store:
 
-- **Remove** entries that reference deleted projects, outdated versions, or resolved bugs
-- **Merge** duplicate entries
-- **Move** detailed notes from MEMORY.md into topic files if MEMORY.md exceeds 150 lines
-- **Keep** MEMORY.md as a concise index pointing to topic files for details
+- **Remove** entries that reference deleted repos, outdated paths, or disproven claims
+- **Merge** duplicate task-group learnings
+- **Condense** `memory_summary.md` if it grows noisy
+- **Keep** `MEMORY.md` as a searchable registry that points to rollout summaries instead of
+  re-explaining them in full
+- **Do not rewrite** `raw_memories.md` manually unless the maintenance flow explicitly regenerates
+  it
 
 Log proposed changes, then apply them directly. Format the log as:
 
 ```
-## [Project Name]
+## [Memory Area]
 
 ### Remove (stale/resolved)
 - "Known bug in X" — X was fixed in commit abc123
 
-### Move to topic file
-- Move "Docker Sandbox CLI" section → docker.md (saves 15 lines in MEMORY.md)
+### Condense / merge
+- Merge duplicate workflow guidance across task groups A and B into one summary line
 
 ### Update
 - Version 1.2 → 1.4 (confirmed in package.json)
@@ -101,43 +102,52 @@ After auditing all projects, look for patterns that appear across 2+ projects:
 - Repeated tool configurations or workflow preferences
 - Recurring pitfalls or gotchas
 
-These are candidates for **global memory** (`~/.codex/memory/`).
+These are candidates for `memory_summary.md`.
 
 Present candidates:
 
 ```
-## Global Memory Candidates
+## Summary Candidates
 
 ### Pattern: [name]
 - Seen in: [project A], [project B]
 - Summary: [one line]
-- Proposed file: ~/.codex/memory/[topic].md
+- Proposed destination: ~/.codex/memories/memory_summary.md
 ```
 
-Apply global memory changes directly after logging them.
+Apply summary changes directly after logging them.
 
-### Step 5: Summary
+### Step 5: Mutation Guard
+
+If higher-priority instructions prohibit editing memory files in the current environment, do an
+audit-only pass instead:
+
+- inventory the current files
+- identify stale, duplicate, or oversized areas
+- verify 2–3 concrete claims against the workspace
+- report the exact edits that should be made, but do not write them
+
+### Step 6: Summary
 
 Display a final report:
 
 ```
 Memory Rollup Complete
 ─────────────────────
-Projects scanned:     ___
-Projects with memory: ___
+Files scanned:        ___
+Rollout refs checked: ___
 Entries pruned:       ___
 Entries updated:      ___
-Topic files created:  ___
-Global patterns added: ___
-MEMORY.md total lines: ___ (global), ___ avg (project)
+Summary updates:      ___
+Audit-only mode:      yes|no
+Line counts:          MEMORY.md ___, memory_summary.md ___, raw_memories.md ___
 ```
 
 ## Rules
 
 - Never delete a memory file entirely — prune entries, don't remove files
-- Keep MEMORY.md files under 150 lines (hard cap at 200 due to system prompt truncation)
-- Prefer topic files for detailed notes; MEMORY.md should be an index
+- Keep `memory_summary.md` concise; it is the prompt-budgeted layer
+- Prefer rollout summaries for detailed notes; `MEMORY.md` should stay searchable and structured
 - When unsure if something is stale, ask rather than delete
-- If a project directory no longer exists on disk, flag it but don't auto-delete its memory — the
-  user may have moved or archived the project
+- If a referenced repo directory no longer exists on disk, flag it but don't auto-delete its memory
 - Do not add new learnings during this skill — only reorganize existing ones
