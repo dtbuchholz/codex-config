@@ -1,242 +1,52 @@
 ---
 name: pr-review
 description:
-  Comprehensive PR review using 6 specialized agents for comments, tests, error handling, types,
-  code quality, and simplification.
-argument-hint: "[review-aspects]"
+  Comprehensive PR review using a fixed parallel reviewer set over one frozen review packet.
+argument-hint: "[range:<git-range>]"
 ---
 
-# Comprehensive PR Review
+# PR Review
 
-Run a thorough pull request review using multiple specialized agents, each focusing on a different
-aspect of code quality. For a faster, cheaper review, use `/pr-review-quick` instead.
+Use the bundled wrapper script. The wrapper freezes review scope first, runs the fixed specialist
+reviewer set in parallel, and collates findings only after all required reviewers finish.
 
-## When This Skill Applies
+## Immediate Action
 
-- User asks for comprehensive PR review
-- User says "/pr-review"
-- Before creating or merging a PR
-
-## Arguments
-
-Optional arguments to filter which reviews to run:
-
-- `comments` - Analyze code comment accuracy and maintainability
-- `tests` - Review test coverage quality and completeness
-- `errors` - Check error handling for silent failures
-- `types` - Analyze type design and invariants
-- `code` - General code review for bugs and quality
-- `simplify` - Simplify code for clarity and maintainability
-- `security` - Check for security vulnerabilities
-- `all` - Run all applicable reviews (default)
-- `parallel` - Launch all agents in parallel (faster)
-
-**Examples:**
-
-```
-/pr-review                    # Full review, sequential
-/pr-review tests errors       # Only test coverage and error handling
-/pr-review all parallel       # Full review, parallel execution
-/pr-review simplify           # Just code simplification
-```
-
-## Review Workflow
-
-### 1. Gather Context
+From the current repo root, run:
 
 ```bash
-# Get changed files
-git diff --name-only main...HEAD 2>/dev/null || git diff --name-only HEAD~5
-
-# Get the actual diff (CRITICAL: agents must only review lines in this diff)
-git diff main...HEAD 2>/dev/null || git diff HEAD~5
+"$HOME/.codex/skills/pr-review/scripts/run-pr-review.sh" "$(pwd)"
 ```
 
-### 2. Read Project Guidelines
+Pass through supported arguments from the user request:
 
-Find and read relevant CODEX.md files:
+- `range:<git-range>` -> `--range <git-range>`
+
+If you want raw event diagnostics, add:
 
 ```bash
-# Root CODEX.md
-cat CODEX.md 2>/dev/null || true
-
-# CODEX.md in directories with changed files
-# For each changed directory, check for CODEX.md
+--raw-log "$(mktemp "${TMPDIR:-/tmp}/pr-review-raw.XXXXXX")"
 ```
 
-Extract relevant guidelines that apply to code review (not all instructions apply - focus on code
-style, patterns, and conventions).
+## Contract
 
-### 3. Launch Review Agents (Codex Sub-Agents)
+- freeze the review scope before spawning any reviewers
+- run the fixed reviewer set in parallel: `code-reviewer`, `security-reviewer`,
+  `silent-failure-hunter`, `pr-test-analyzer`, `comment-analyzer`
+- include `type-design-analyzer` only when the diff includes typed-language files
+- require modified-lines-only reporting
+- wait for every required reviewer before synthesis
+- fail the review if any required reviewer does not complete cleanly
+- do not return partial-review success
 
-**CRITICAL INSTRUCTION FOR ALL AGENTS:**
+## After Success
 
-Every agent MUST receive these instructions:
+- read the report file path printed by the script
+- present the findings-only result to the user
+- preserve the report's completion status and confidence buckets
 
-```
-IMPORTANT: Only report issues on lines that were ADDED or MODIFIED in this diff.
-Do NOT report:
-- Pre-existing issues in unchanged code
-- Issues on lines that were not modified
-- Problems that existed before this change
+## After Failure
 
-The diff shows + for added lines and - for removed lines. Only flag issues on + lines.
-```
-
-**Sequential** (default): Run one at a time for easier action
-
-**Parallel** (with `parallel` arg): Launch all at once for speed
-
-Use `spawn_agent` with `agent_type: explorer` for read-only review tasks.
-
-If the diff is too large to pass in one prompt, split by changed file and send per-file diff chunks
-to separate explorers, then merge results.
-
-For each agent, use this template:
-
-```
-spawn_agent(agent_type="explorer", message="
-[AGENT_NAME] REVIEW
-
-CRITICAL: Only report issues on lines ADDED or MODIFIED in this diff (+ lines).
-Do NOT report pre-existing issues or problems in unchanged code.
-
-Project guidelines from CODEX.md:
-[relevant guidelines]
-
-Diff to review:
-[paste diff]
-
-[Agent-specific instructions]
-
-For each issue found, provide:
-1. File and line number
-2. Issue description
-3. Confidence score (0-100):
-   - 0-25: Likely false positive, doesn't hold up to scrutiny
-   - 26-50: Might be real, but could be intentional or a nitpick
-   - 51-75: Likely real issue, but may not happen often in practice
-   - 76-90: Verified real issue that will impact functionality
-   - 91-100: Definitely a bug/problem, confirmed with evidence
-
-Output format:
-[CONFIDENCE: XX] file:line - description")
-```
-
-Execution discipline:
-
-- Launch independent explorers in parallel.
-- Use `wait` only after all review prompts are dispatched.
-- Do not delegate synthesis; parent agent owns final filtering and summary.
-
-### 4. Filter Results
-
-After collecting all agent responses:
-
-**Only report issues with confidence ≥ 75%.**
-
-Filter out:
-
-- Pre-existing issues (not in the diff)
-- Issues a linter/typechecker would catch (assume CI runs these)
-- Pedantic nitpicks a senior engineer wouldn't flag
-- Style issues not explicitly in CODEX.md
-- Issues on lines the user didn't modify
-- Intentional changes related to the broader feature
-
-### 5. Aggregate Results
-
-Create summary with only high-confidence issues:
-
-```markdown
-# PR Review Summary
-
-**Files reviewed:** [count] **Issues found:** [count] (filtered from [total] raw findings)
-
-## Critical Issues (confidence ≥ 91)
-
-- [file:line] Issue description
-
-## Important Issues (confidence 75-90)
-
-- [file:line] Issue description
-
-## Passed Checks
-
-- [list of agents that found no issues]
-
-## Strengths
-
-- [what's done well in this change]
-```
-
-If no issues pass the confidence threshold: "No significant issues found."
-
-## Available Review Agents
-
-### code-reviewer
-
-**Focus**: General code review for project guidelines
-
-- Checks CODEX.md compliance
-- Detects bugs and logic errors
-- Reviews code quality issues
-
-### security-reviewer
-
-**Focus**: Security vulnerabilities
-
-- SQL injection, XSS
-- Hardcoded secrets/credentials
-- Missing input validation
-
-### silent-failure-hunter
-
-**Focus**: Error handling
-
-- Silent failures in catch blocks
-- Inadequate error handling
-- Missing error logging
-
-### pr-test-analyzer
-
-**Focus**: Test coverage
-
-- Missing tests for new functionality
-- Edge cases not covered
-- Test quality issues
-
-### type-design-analyzer
-
-**Focus**: Type design (TypeScript/typed languages)
-
-- Type safety issues
-- Missing or overly broad types
-- Invariant violations
-
-### comment-analyzer
-
-**Focus**: Documentation accuracy
-
-- Comments that don't match code
-- Outdated documentation
-- Misleading comments
-
-### code-simplifier
-
-**Focus**: Code simplification (run last)
-
-- Overly complex code
-- Unnecessary abstractions
-- Opportunities to simplify
-
-## False Positive Examples
-
-Train agents to ignore these:
-
-- Something that looks like a bug but isn't
-- Issues a linter would catch (imports, formatting)
-- General quality issues not in CODEX.md
-- Issues silenced by lint-ignore comments
-- Intentional functionality changes
-- Real issues on lines NOT modified in the diff
+- report the exact failure
+- if a raw log path was used, include it in the error report
+- do not pretend the review completed

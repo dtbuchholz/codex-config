@@ -12,6 +12,7 @@ models_cache.json
 *.sqlite*
 .tmp/
 memories/
+installation_id
 
 # Node
 node_modules/
