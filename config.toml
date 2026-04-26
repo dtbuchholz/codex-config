@@ -1,7 +1,7 @@
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
-model = "gpt-5.4"
+model = "gpt-5.5"
 personality = "pragmatic"
 model_reasoning_effort = "high"
 plan_mode_reasoning_effort = "high"
@@ -19,6 +19,9 @@ apps = false
 
 [tui]
 status_line = ["model-with-reasoning", "context-remaining", "current-dir", "five-hour-limit"]
+
+[tui.model_availability_nux]
+"gpt-5.5" = 3
 
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
