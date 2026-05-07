@@ -1,14 +1,16 @@
 ---
 name: pr-review
 description:
-  Comprehensive PR review using a fixed parallel reviewer set over one frozen review packet.
-argument-hint: "[range:<git-range>]"
+  Comprehensive PR review using a fixed parallel reviewer set over frozen bounded review packets.
+argument-hint: "[range:<git-range>] [path:<pathspec>] [include-lockfiles]"
 ---
 
 # PR Review
 
-Use the bundled wrapper script. The wrapper freezes review scope first, runs the fixed specialist
-reviewer set in parallel, and collates findings only after all required reviewers finish.
+Use the bundled wrapper script. The wrapper freezes review scope first, shards oversized diffs into
+bounded frozen packets, runs the fixed specialist reviewer set in parallel, and collates findings
+only after all required reviewers finish. It preserves the temp workdir by default so reviewer
+prompts, raw outputs, and packet files remain inspectable until the OS cleans `/tmp`.
 
 ## Immediate Action
 
@@ -21,6 +23,13 @@ From the current repo root, run:
 Pass through supported arguments from the user request:
 
 - `range:<git-range>` -> `--range <git-range>`
+- `context-lines:<n>` -> `--context-lines <n>`
+- `path:<pathspec>` -> `--path <pathspec>` (repeat for multiple path filters)
+- `max-packet-bytes:<n>` -> `--max-packet-bytes <n>`
+- `include-lockfiles` -> `--include-lockfiles` when dependency lockfile changes are the intended
+  review target
+- `keep-tmp` -> `--keep-tmp`
+- `cleanup-tmp` -> `--cleanup-tmp` only if the user explicitly wants temp files removed
 
 If you want raw event diagnostics, add:
 
@@ -30,12 +39,33 @@ If you want raw event diagnostics, add:
 
 ## Contract
 
-- freeze the review scope before spawning any reviewers
+- freeze the review scope before running reviewers
+- keep every inline reviewer packet below the configured packet-size cap; fail before reviewer
+  launch if one file cannot fit in a bounded packet
+- exclude common dependency lockfiles from reviewer packets by default, while preserving
+  `all-changed-files.txt` and `excluded-files.txt` artifacts; use `--include-lockfiles` to review
+  lockfile hunks intentionally
+- shard large diffs by changed file and run the same reviewer set for each shard
 - run the fixed reviewer set in parallel: `code-reviewer`, `security-reviewer`,
-  `silent-failure-hunter`, `pr-test-analyzer`, `comment-analyzer`
+  `silent-failure-hunter`, `pr-test-analyzer`, `comment-analyzer`, `code-simplifier`
 - include `type-design-analyzer` only when the diff includes typed-language files
-- require modified-lines-only reporting
+- default to richer frozen diff context (`--context-lines 40`) while keeping the review scoped to
+  the selected diff
+- require changed-behavior reporting: code defects must cite added/modified lines, while
+  missing-test findings may cite the changed behavior or file that needs coverage
+- keep semantic-contract, naming/control-plane, type-design, simplification, and unit-test gap
+  findings in scope when they materially affect changed behavior, changed API surface, or future
+  safety of a changed helper/module
 - wait for every required reviewer before synthesis
+- require each reviewer to include `Review evidence:` and `Findings:` sections; common Markdown
+  heading variants such as `**Review evidence:**` are accepted, but a bare
+  `No significant issues found.` reviewer response is a failed review, not success
+- wait for all launched reviewer processes to settle before reporting reviewer contract failures;
+  report exact reviewer names and reasons instead of cancelling the remaining reviewers on the first
+  malformed output
+- synthesize shard-level reports first when the review scope is split across multiple packets
+- preserve per-reviewer prompts, raw logs, outputs, combined reviewer output artifacts, and the
+  wrapper temp workdir by default
 - fail the review if any required reviewer does not complete cleanly
 - do not return partial-review success
 
@@ -44,9 +74,11 @@ If you want raw event diagnostics, add:
 - read the report file path printed by the script
 - present the findings-only result to the user
 - preserve the report's completion status and confidence buckets
+- if synthesis quality is questioned, inspect the printed artifact directory and
+  `reviewer-outputs.md` before rerunning
 
 ## After Failure
 
 - report the exact failure
-- if a raw log path was used, include it in the error report
+- include the reviewer output artifact path and raw log path when available
 - do not pretend the review completed

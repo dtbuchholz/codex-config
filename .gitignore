@@ -3,6 +3,7 @@ auth.json
 history.jsonl
 log/
 sessions/
+session_index.jsonl
 tmp/
 memory/
 projects/
