@@ -3,16 +3,18 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-usage: run-pr-review.sh <project_dir> [--output-file <path>] [--raw-log <path>] [--range <git-range>] [--timeout <seconds>] [--context-lines <n>] [--path <pathspec>] [--max-packet-bytes <n>] [--include-lockfiles] [--keep-tmp|--cleanup-tmp]
+usage: run-pr-review.sh <project_dir> [--output-file <path>] [--raw-log <path>] [--range <git-range>] [--timeout <seconds>] [--context-lines <n>] [--path <pathspec>] [--max-packet-bytes <n>] [--mode fast|thorough] [--fast] [--acceptance-context <path>] [--candidate-threshold <n>] [--include-lockfiles] [--keep-tmp|--cleanup-tmp]
 
-Runs one parent Codex PR review over one frozen review packet. The parent is responsible for
-spawning the fixed reviewer set in parallel and synthesizing the final result.
+Runs a Codex PR review over a frozen review scope. Thorough mode is the default and allows
+read-only context inspection; fast mode preserves the older diff-only/no-tools reviewer contract.
 
 Examples:
   run-pr-review.sh .
   run-pr-review.sh . --range HEAD~3..HEAD
   run-pr-review.sh . --timeout 420 --raw-log /tmp/pr-review-raw.log
   run-pr-review.sh . --context-lines 80
+  run-pr-review.sh . --fast
+  run-pr-review.sh . --acceptance-context /tmp/issue-plan.md
   run-pr-review.sh . --path executors/polymarket-sum-to-one/src
   run-pr-review.sh . --include-lockfiles
   run-pr-review.sh . --keep-tmp
@@ -37,6 +39,9 @@ review_context_lines="${PR_REVIEW_CONTEXT_LINES:-40}"
 max_packet_bytes="${PR_REVIEW_MAX_PACKET_BYTES:-850000}"
 keep_tmp="${PR_REVIEW_KEEP_TMP:-1}"
 include_lockfiles="${PR_REVIEW_INCLUDE_LOCKFILES:-0}"
+review_mode="${PR_REVIEW_MODE:-thorough}"
+candidate_threshold="${PR_REVIEW_CANDIDATE_THRESHOLD:-}"
+acceptance_context_path=""
 path_filters=()
 
 while [[ $# -gt 0 ]]; do
@@ -76,6 +81,29 @@ while [[ $# -gt 0 ]]; do
       max_packet_bytes="$2"
       shift 2
       ;;
+    --mode)
+      [[ $# -ge 2 && -n "${2:-}" ]] || { echo "error: --mode requires fast or thorough" >&2; exit 2; }
+      review_mode="$2"
+      shift 2
+      ;;
+    --fast)
+      review_mode="fast"
+      shift
+      ;;
+    --thorough)
+      review_mode="thorough"
+      shift
+      ;;
+    --acceptance-context)
+      [[ $# -ge 2 && -n "${2:-}" ]] || { echo "error: --acceptance-context requires a path" >&2; exit 2; }
+      acceptance_context_path="$2"
+      shift 2
+      ;;
+    --candidate-threshold)
+      [[ $# -ge 2 && -n "${2:-}" ]] || { echo "error: --candidate-threshold requires a number" >&2; exit 2; }
+      candidate_threshold="$2"
+      shift 2
+      ;;
     --include-lockfiles)
       include_lockfiles=1
       shift
@@ -110,6 +138,25 @@ if [[ "$keep_tmp" != "0" && "$keep_tmp" != "1" ]]; then
 fi
 if [[ "$include_lockfiles" != "0" && "$include_lockfiles" != "1" ]]; then
   echo "error: PR_REVIEW_INCLUDE_LOCKFILES must be 0 or 1" >&2
+  exit 2
+fi
+case "$review_mode" in
+  fast|thorough)
+    ;;
+  *)
+    echo "error: --mode must be fast or thorough" >&2
+    exit 2
+    ;;
+esac
+if [[ -z "$candidate_threshold" ]]; then
+  if [[ "$review_mode" == "thorough" ]]; then
+    candidate_threshold=60
+  else
+    candidate_threshold=75
+  fi
+fi
+if ! [[ "$candidate_threshold" =~ ^[0-9]+$ ]] || [[ "$candidate_threshold" -gt 100 ]]; then
+  echo "error: --candidate-threshold must be an integer between 0 and 100" >&2
   exit 2
 fi
 
@@ -400,6 +447,7 @@ all_untracked_files_tmp="$tmp_root/all-untracked-files.txt"
 excluded_files_tmp="$tmp_root/excluded-files.txt"
 guidance_tmp="$tmp_root/guidance.md"
 seen_guidance_tmp="$tmp_root/seen-guidance.txt"
+acceptance_context_tmp="$tmp_root/acceptance-context.md"
 snippet_dir="$tmp_root/snippets"
 packet_dir="$tmp_root/packets"
 prompt_file="$tmp_root/review.prompt"
@@ -420,6 +468,24 @@ fi
 
 touch "$seen_guidance_tmp"
 : >"$guidance_tmp"
+if [[ -n "$acceptance_context_path" ]]; then
+  resolved_acceptance_context=""
+  if [[ -f "$acceptance_context_path" && ! -L "$acceptance_context_path" ]]; then
+    resolved_acceptance_context="$acceptance_context_path"
+  elif [[ -f "$project_dir/$acceptance_context_path" && ! -L "$project_dir/$acceptance_context_path" ]]; then
+    resolved_acceptance_context="$project_dir/$acceptance_context_path"
+  else
+    echo "error: --acceptance-context path is not a regular file: $acceptance_context_path" >&2
+    exit 2
+  fi
+  {
+    printf 'Acceptance context source: %s\n\n' "$resolved_acceptance_context"
+    cat "$resolved_acceptance_context"
+    printf '\n'
+  } >"$acceptance_context_tmp"
+else
+  printf 'No acceptance context supplied.\n' >"$acceptance_context_tmp"
+fi
 
 scope_label=""
 scope_kind=""
@@ -579,6 +645,8 @@ write_packet() {
   {
     printf 'Review scope: %s\n' "$scope_label"
     printf 'Shard: %s of %s\n' "$shard_number" "$shard_total"
+    printf 'Review mode: %s\n' "$review_mode"
+    printf 'Reviewer candidate threshold: %s\n' "$candidate_threshold"
     printf 'Typed diff present: %s\n' "$typed_diff"
     printf 'Diff mode: unified=%s\n' "$review_context_lines"
     printf 'Max packet bytes: %s\n' "$max_packet_bytes"
@@ -598,6 +666,8 @@ write_packet() {
     fi
     printf '\nProject guidance:\n'
     cat "$guidance_tmp"
+    printf '\nAcceptance context:\n'
+    cat "$acceptance_context_tmp"
     printf '\nFrozen diff packet shard:\n```diff\n'
     for path in "$@"; do
       snippet_path="$(snippet_path_for_file "$path")"
@@ -756,12 +826,15 @@ EOF
       cat <<'EOF'
 - Check whether new helper names, cooldown/limiter semantics, fallbacks, or status payloads make failures look scoped differently than they really are.
 - Report mismatches between documented lifecycle/scope and the changed call path when they can hide skipped work, suppressed attempts, or misclassified no-op behavior.
+- In thorough mode, keep context reads bounded to changed files, direct callers/callees, and directly relevant tests; do not perform broad repository discovery before checking the diff.
 EOF
       ;;
     pr-test-analyzer)
       cat <<'EOF'
+- Compare changed behavior against nearby existing tests when running in thorough mode; missing-test findings should identify the concrete regression that would slip through.
 - Check whether every newly extracted non-trivial helper/module has direct unit coverage for its local edge cases.
 - Do not treat broad integration tests as sufficient when a new module centralizes parsing, projection, logging, filtering, rate limiting, or state tracking logic.
+- Check negative/error-path/state-transition coverage for new validation, retries, persistence, async/concurrent behavior, and control-plane/status semantics.
 - Missing-test findings are valid when tied to a new changed file/module or changed behavior, even if there is no added test-file line to cite.
 EOF
       ;;
@@ -797,10 +870,43 @@ write_reviewer_prompt() {
   local prompt_path="$2"
   local packet_path="$3"
   local shard_label="$4"
-  local focus checklist
+  local focus checklist context_contract threshold_contract simplifier_context
 
   focus="$(reviewer_focus "$reviewer")"
   checklist="$(reviewer_checklist "$reviewer")"
+  if [[ "$review_mode" == "fast" ]]; then
+    context_contract="- Review only the frozen packet shard below.
+- This is shard $shard_label of the frozen review scope; do not infer findings from files absent from this shard.
+- Do not run shell commands, read files, inspect the repo, inspect agent directories, inspect skill files, use MEMORY.md, or use tools."
+  else
+    context_contract="- Start from the frozen packet shard below; it is the authoritative review scope.
+- This is shard $shard_label of the frozen review scope. You may inspect context for files in this shard, but every finding must still be tied to changed behavior in this shard.
+- You may use read-only tools or shell commands to inspect changed files, nearby tests, project guidance, existing helper patterns, and git diff context.
+- Keep read-only context bounded: inspect changed files first, then at most six directly relevant source/test files unless a specific finding requires one more file.
+- Prefer targeted `rg`/`sed` reads over broad scans, and stop exploring once you have enough evidence for or against a finding.
+- Do not edit files, run formatters, run migrations, generate code, update snapshots, install packages, or run mutating commands.
+- Do not use MEMORY.md, inspect agent directories, inspect skill files, or broaden the review to unrelated repository areas.
+- If context is absent or inconclusive, report that uncertainty in the finding instead of inventing a cross-file conclusion."
+  fi
+
+  if [[ "$candidate_threshold" -lt 75 ]]; then
+    threshold_contract="- Return final-report findings with confidence >= 75 under \"Findings:\".
+- Return candidate findings with confidence >= $candidate_threshold and < 75 under \"Candidate findings:\"; these are artifact-only candidates for adjudication, not final report issues.
+- If no confidence >= 75 issue exists, put exactly \"No significant issues found.\" under \"Findings:\" before any candidate findings."
+  else
+    threshold_contract="- Return only findings with confidence >= $candidate_threshold under \"Findings:\"."
+  fi
+
+  simplifier_context=""
+  if [[ "$reviewer" == "code-simplifier" && -s "${first_wave_outputs_file:-}" ]]; then
+    simplifier_context="$(cat <<EOF
+
+First-wave reviewer outputs for simplifier context:
+
+$(cat "$first_wave_outputs_file")
+EOF
+)"
+  fi
 
   cat >"$prompt_path" <<EOF
 You are $reviewer.
@@ -812,9 +918,7 @@ Specialty checklist:
 $checklist
 
 Review contract:
-- Review only the frozen packet shard below.
-- This is shard $shard_label of the frozen review scope; do not infer findings from files absent from this shard.
-- Do not run shell commands, read files, inspect the repo, inspect agent directories, inspect skill files, use MEMORY.md, or use tools.
+$context_contract
 - Inspect the actual diff hunks, not just the file list, guidance text, or high-level summary.
 - Before returning no findings, make a concrete pass over each changed file in this shard and verify your specialty focus against the changed lines.
 - Report only issues tied to changed behavior in this diff.
@@ -822,11 +926,12 @@ Review contract:
 - For missing-test findings, cite the changed behavior or changed file that needs coverage; absence of a test does not need a test-file line.
 - Type-design, simplification, naming, and semantic-contract findings are in scope when they materially affect the changed behavior, changed API surface, or future safety of a changed helper/module.
 - Do not suppress a confidence >= 75 type-design or test-gap finding merely because it is not an immediate runtime crash.
-- Return only findings with confidence >= 75.
+$threshold_contract
 - For each issue, include file path, line number, confidence, the concrete bug/risk, and a concise fix direction.
 - Always include a "Review evidence:" section with concise bullets naming the files or diff areas you inspected for your specialty.
 - Then include a "Findings:" section.
-- If no qualifying issues exist, put exactly "No significant issues found." under "Findings:".
+- If no qualifying final-report or candidate issue exists, put exactly "No significant issues found." under "Findings:".
+$simplifier_context
 
 Frozen review packet follows:
 
@@ -838,9 +943,10 @@ run_codex_prompt() {
   local prompt_path="$1"
   local out_path="$2"
   local raw_path="$3"
+  local timeout_seconds="${4:-$review_timeout_seconds}"
 
   if command -v timeout >/dev/null 2>&1; then
-    timeout "$review_timeout_seconds" \
+    timeout "$timeout_seconds" \
       codex exec \
         --disable memories \
         --json \
@@ -867,26 +973,27 @@ reviewer_output_has_evidence() {
   grep -Eiq "$evidence_heading" "$out_path" && grep -Eiq "$findings_heading" "$out_path"
 }
 
-base_reviewers=(code-reviewer security-reviewer silent-failure-hunter pr-test-analyzer comment-analyzer code-simplifier)
-if [[ "$typed_diff" == "true" ]]; then
-  base_reviewers+=(type-design-analyzer)
-fi
+now_epoch() {
+  date +%s
+}
 
-reviewers=()
-reviewer_base_names=()
-reviewer_shard_labels=()
-reviewer_packet_files=()
-for packet_i in "${!packet_files[@]}"; do
-  shard_number=$((packet_i + 1))
-  shard_label="${shard_number}/${packet_count}"
-  for reviewer in "${base_reviewers[@]}"; do
-    reviewers+=("${reviewer}-shard-${shard_number}")
-    reviewer_base_names+=("$reviewer")
-    reviewer_shard_labels+=("$shard_label")
-    reviewer_packet_files+=("${packet_files[$packet_i]}")
-  done
-done
-required_count="${#reviewers[@]}"
+reviewer_timeout_for() {
+  local reviewer="$1"
+
+  if [[ "$reviewer" == "silent-failure-hunter" && "$review_mode" == "thorough" ]]; then
+    printf '%s' "${PR_REVIEW_SILENT_FAILURE_TIMEOUT_SECONDS:-600}"
+  else
+    printf '%s' "$review_timeout_seconds"
+  fi
+}
+
+first_wave_reviewers=(code-reviewer security-reviewer silent-failure-hunter pr-test-analyzer comment-analyzer)
+if [[ "$typed_diff" == "true" ]]; then
+  first_wave_reviewers+=(type-design-analyzer)
+fi
+base_reviewers=("${first_wave_reviewers[@]}" code-simplifier)
+required_count=$(( packet_count * ${#base_reviewers[@]} ))
+first_wave_outputs_file="$tmp_root/first-wave-reviewer-outputs.md"
 
 if [[ -n "$output_file" ]]; then
   ensure_parent_dir "$output_file"
@@ -900,6 +1007,7 @@ cp "$changed_files_tmp" "$artifact_dir/changed-files.txt"
 cp "$all_changed_files_tmp" "$artifact_dir/all-changed-files.txt"
 cp "$excluded_files_tmp" "$artifact_dir/excluded-files.txt"
 cp "$guidance_tmp" "$artifact_dir/guidance.md"
+cp "$acceptance_context_tmp" "$artifact_dir/acceptance-context.md"
 for packet_path in "${packet_files[@]}"; do
   cp "$packet_path" "$artifact_dir/$(basename "$packet_path")"
 done
@@ -908,11 +1016,17 @@ if [[ -n "$raw_log" ]]; then
   ensure_parent_dir "$raw_log"
   : >"$raw_log"
   {
-    printf 'wrapper.started\tscope=%s\n' "$scope_label"
+    printf 'wrapper.started\tts=%s\tscope=%s\n' "$(now_epoch)" "$scope_label"
     printf 'wrapper.workdir\t%s\n' "$tmp_root"
     printf 'wrapper.keep_tmp\t%s\n' "$keep_tmp"
     printf 'wrapper.include_lockfiles\t%s\n' "$include_lockfiles"
+    printf 'wrapper.mode\t%s\n' "$review_mode"
+    printf 'wrapper.candidate_threshold\t%s\n' "$candidate_threshold"
+    printf 'wrapper.acceptance_context\t%s\n' "$artifact_dir/acceptance-context.md"
     printf 'wrapper.reviewers\t%s\n' "$(join_by ',' "${base_reviewers[@]}")"
+    printf 'wrapper.first_wave_reviewers\t%s\n' "$(join_by ',' "${first_wave_reviewers[@]}")"
+    printf 'wrapper.first_wave_tasks\t%s\n' "$(( packet_count * ${#first_wave_reviewers[@]} ))"
+    printf 'wrapper.simplifier_tasks\t%s\n' "$packet_count"
     printf 'wrapper.shards\t%s\n' "$packet_count"
     printf 'wrapper.tasks\t%s\n' "$required_count"
     printf 'wrapper.all_changed_files\t%s\n' "$artifact_dir/all-changed-files.txt"
@@ -932,192 +1046,340 @@ reviewer_out_files=()
 reviewer_pids=()
 reviewer_states=()
 reviewer_exit_codes=()
+reviewer_started_at=()
+reviewers=()
+reviewer_base_names=()
+reviewer_shard_labels=()
+reviewer_packet_files=()
 
-for reviewer in "${reviewers[@]}"; do
-  task_i="${#reviewer_prompt_files[@]}"
-  base_reviewer="${reviewer_base_names[$task_i]}"
-  shard_label="${reviewer_shard_labels[$task_i]}"
-  packet_path="${reviewer_packet_files[$task_i]}"
-  reviewer_prompt="$tmp_root/$reviewer.prompt"
-  reviewer_raw="$tmp_root/$reviewer.raw"
-  reviewer_out="$tmp_root/$reviewer.out"
+append_reviewer_task() {
+  local base_reviewer="$1"
+  local shard_number="$2"
+  local shard_label="$3"
+  local packet_path="$4"
+  local reviewer="${base_reviewer}-shard-${shard_number}"
+
+  reviewers+=("$reviewer")
+  reviewer_base_names+=("$base_reviewer")
+  reviewer_shard_labels+=("$shard_label")
+  reviewer_packet_files+=("$packet_path")
+  reviewer_prompt_files+=("$tmp_root/$reviewer.prompt")
+  reviewer_raw_files+=("$tmp_root/$reviewer.raw")
+  reviewer_out_files+=("$tmp_root/$reviewer.out")
+  reviewer_pids+=("")
+  reviewer_states+=("queued")
+  reviewer_exit_codes+=("")
+  reviewer_started_at+=("")
+}
+
+launch_reviewer_task() {
+  local task_i="$1"
+  local reviewer="${reviewers[$task_i]}"
+  local base_reviewer="${reviewer_base_names[$task_i]}"
+  local shard_label="${reviewer_shard_labels[$task_i]}"
+  local packet_path="${reviewer_packet_files[$task_i]}"
+  local reviewer_prompt="${reviewer_prompt_files[$task_i]}"
+  local reviewer_raw="${reviewer_raw_files[$task_i]}"
+  local reviewer_out="${reviewer_out_files[$task_i]}"
+  local timeout_seconds start_ts
 
   write_reviewer_prompt "$base_reviewer" "$reviewer_prompt" "$packet_path" "$shard_label"
-
-  reviewer_prompt_files+=("$reviewer_prompt")
-  reviewer_raw_files+=("$reviewer_raw")
-  reviewer_out_files+=("$reviewer_out")
-  reviewer_states+=("running")
-  reviewer_exit_codes+=("")
+  reviewer_states[$task_i]="running"
+  timeout_seconds="$(reviewer_timeout_for "$base_reviewer")"
+  start_ts="$(now_epoch)"
+  reviewer_started_at[$task_i]="$start_ts"
 
   if [[ -n "$raw_log" ]]; then
-    printf 'reviewer.started\tname=%s\tbase=%s\tshard=%s\tpacket=%s\traw=%s\toutput=%s\n' \
-      "$reviewer" "$base_reviewer" "$shard_label" "$artifact_dir/$(basename "$packet_path")" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
+    printf 'reviewer.started\tts=%s\tname=%s\tbase=%s\tshard=%s\ttimeout=%s\tpacket=%s\traw=%s\toutput=%s\n' \
+      "$start_ts" "$reviewer" "$base_reviewer" "$shard_label" "$timeout_seconds" "$artifact_dir/$(basename "$packet_path")" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
   fi
 
   (
     set +e
-    run_codex_prompt "$reviewer_prompt" "$reviewer_out" "$reviewer_raw"
+    run_codex_prompt "$reviewer_prompt" "$reviewer_out" "$reviewer_raw" "$timeout_seconds"
   ) &
-  reviewer_pids+=("$!")
-done
+  reviewer_pids[$task_i]="$!"
+}
 
-last_progress=""
-last_progress_at=0
+wait_for_reviewers() {
+  local phase_label="$1"
+  local start_index="$2"
+  local end_index="$3"
+  local phase_required=$((end_index - start_index))
+  local last_progress=""
+  local last_progress_at=0
+  local completed_ts started_ts duration_seconds now_ts
 
-while :; do
-  completed_count=0
-  unresolved_parts=()
-  active_count=0
+  if [[ -n "$raw_log" ]]; then
+    printf 'reviewer.phase_started\tts=%s\tphase=%s\ttasks=%s\n' "$(now_epoch)" "$phase_label" "$phase_required" >>"$raw_log"
+  fi
+
+  while :; do
+    completed_count=0
+    unresolved_parts=()
+    active_count=0
+
+    for ((i = start_index; i < end_index; i++)); do
+      state="${reviewer_states[$i]}"
+      reviewer="${reviewers[$i]}"
+      pid="${reviewer_pids[$i]}"
+      reviewer_out="${reviewer_out_files[$i]}"
+      reviewer_raw="${reviewer_raw_files[$i]}"
+      completed_ts="$(now_epoch)"
+      started_ts="${reviewer_started_at[$i]:-$completed_ts}"
+      duration_seconds=$((completed_ts - started_ts))
+
+      case "$state" in
+        success)
+          completed_count=$((completed_count + 1))
+          continue
+          ;;
+        failed:*)
+          unresolved_parts+=("${reviewer}(${state#failed:})")
+          continue
+          ;;
+        queued)
+          unresolved_parts+=("${reviewer}(queued)")
+          continue
+          ;;
+      esac
+
+      if kill -0 "$pid" >/dev/null 2>&1; then
+        active_count=$((active_count + 1))
+        unresolved_parts+=("${reviewer}(running)")
+        continue
+      fi
+
+      if wait "$pid"; then
+        exit_code=0
+      else
+        exit_code=$?
+      fi
+      reviewer_exit_codes[i]="$exit_code"
+
+      fail_reason=""
+      if [[ "$exit_code" -ne 0 ]]; then
+        fail_reason="exit=$exit_code"
+      elif [[ ! -s "$reviewer_out" ]]; then
+        fail_reason="empty-output"
+      elif grep -Eq '(^REVIEW FAILED$|^Missing reviewers:|REVIEW FAILED[[:space:]]*$)' "$reviewer_out"; then
+        fail_reason="invalid-output"
+      elif ! reviewer_output_has_evidence "$reviewer_out"; then
+        fail_reason="missing-review-evidence"
+      fi
+
+      if [[ -n "$fail_reason" ]]; then
+        reviewer_states[i]="failed:$fail_reason"
+        unresolved_parts+=("${reviewer}($fail_reason)")
+        if [[ -n "$raw_log" ]]; then
+          printf 'reviewer.failed\tts=%s\tname=%s\treason=%s\texit=%s\tduration=%s\traw=%s\toutput=%s\n' \
+            "$completed_ts" "$reviewer" "$fail_reason" "$exit_code" "$duration_seconds" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
+        fi
+      else
+        reviewer_states[i]="success"
+        completed_count=$((completed_count + 1))
+        if [[ -n "$raw_log" ]]; then
+          printf 'reviewer.completed\tts=%s\tname=%s\texit=%s\tduration=%s\traw=%s\toutput=%s\n' \
+            "$completed_ts" "$reviewer" "$exit_code" "$duration_seconds" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
+        fi
+      fi
+    done
+
+    if [[ ${#unresolved_parts[@]} -eq 0 ]]; then
+      unresolved='-'
+    else
+      unresolved="$(join_by ', ' "${unresolved_parts[@]}")"
+    fi
+    progress="${completed_count}/${phase_required}"$'\t'"$unresolved"
+
+    if [[ "$progress" != "$last_progress" ]]; then
+      now_ts="$(date +%s)"
+      if [[ "$last_progress_at" -eq 0 || $(( now_ts - last_progress_at )) -ge 2 ]]; then
+        printf 'pr-review: progress %s %s\n' "$phase_label" "$progress" >&2
+        if [[ -n "$raw_log" ]]; then
+          printf 'reviewer.phase_progress\tts=%s\tphase=%s\tprogress=%s\tunresolved=%s\n' "$now_ts" "$phase_label" "${completed_count}/${phase_required}" "$unresolved" >>"$raw_log"
+        fi
+        last_progress="$progress"
+        last_progress_at="$now_ts"
+      fi
+    fi
+
+    if [[ "$active_count" -eq 0 ]]; then
+      break
+    fi
+
+    sleep 2
+  done
+
+  if [[ -n "$raw_log" ]]; then
+    printf 'reviewer.phase_completed\tts=%s\tphase=%s\tcompleted=%s\ttasks=%s\n' "$(now_epoch)" "$phase_label" "$completed_count" "$phase_required" >>"$raw_log"
+  fi
+}
+
+write_reviewer_outputs() {
+  local output_path="$1"
+  local title="$2"
+
+  {
+    printf '# %s\n\n' "$title"
+    printf 'Review scope: %s\n\n' "$scope_label"
+    printf 'Review mode: %s\n\n' "$review_mode"
+    printf 'Reviewer candidate threshold: %s\n\n' "$candidate_threshold"
+    printf 'Packet shards: %s\n\n' "$packet_count"
+    for i in "${!reviewers[@]}"; do
+      reviewer="${reviewers[$i]}"
+      base_reviewer="${reviewer_base_names[$i]}"
+      shard_label="${reviewer_shard_labels[$i]}"
+      packet_path="${reviewer_packet_files[$i]}"
+      reviewer_out="${reviewer_out_files[$i]}"
+      reviewer_raw="${reviewer_raw_files[$i]}"
+      reviewer_prompt="${reviewer_prompt_files[$i]}"
+      reviewer_artifact_out="$artifact_dir/$reviewer.out.md"
+      reviewer_artifact_raw="$artifact_dir/$reviewer.raw.jsonl"
+      reviewer_artifact_prompt="$artifact_dir/$reviewer.prompt.md"
+
+      [[ -f "$reviewer_out" ]] && cp "$reviewer_out" "$reviewer_artifact_out"
+      [[ -f "$reviewer_raw" ]] && cp "$reviewer_raw" "$reviewer_artifact_raw"
+      [[ -f "$reviewer_prompt" ]] && cp "$reviewer_prompt" "$reviewer_artifact_prompt"
+
+      printf '## %s\n\n' "$reviewer"
+      printf 'Base reviewer: %s\n\n' "$base_reviewer"
+      printf 'Shard: %s\n\n' "$shard_label"
+      printf 'Packet artifact: %s\n\n' "$artifact_dir/$(basename "$packet_path")"
+      if [[ -s "$reviewer_out" ]]; then
+        cat "$reviewer_out"
+      else
+        printf 'No reviewer output captured.\n'
+      fi
+      printf '\n\n'
+    done
+  } >"$output_path"
+}
+
+collect_failed_reviewers() {
+  failed_reviewers=()
+  for i in "${!reviewers[@]}"; do
+    if [[ "${reviewer_states[$i]}" != "success" ]]; then
+      if [[ "${reviewer_states[$i]}" == failed:* ]]; then
+        failed_reviewers+=("${reviewers[$i]}(${reviewer_states[$i]#failed:})")
+      else
+        failed_reviewers+=("${reviewers[$i]}(${reviewer_states[$i]})")
+      fi
+    fi
+  done
+  [[ ${#failed_reviewers[@]} -eq 0 ]]
+}
+
+fail_if_reviewers_failed() {
+  if collect_failed_reviewers; then
+    return 0
+  fi
+  write_reviewer_outputs "$reviewer_outputs_file" "Reviewer Outputs"
+  write_partial_failure_report
+  printf 'pr-review: reviewer outputs -> %s\n' "$reviewer_outputs_file" >&2
+  if [[ -n "$raw_log" ]]; then
+    printf 'reviewer.outputs_preserved\tpath=%s\tartifact_dir=%s\n' "$reviewer_outputs_file" "$artifact_dir" >>"$raw_log"
+  fi
+  echo "error: pr-review reviewers did not complete cleanly" >&2
+  echo "error: failed reviewers: $(join_by ', ' "${failed_reviewers[@]}")" >&2
+  echo "error: reviewer outputs: $reviewer_outputs_file" >&2
+  echo "error: partial failure report: $output_file" >&2
+  echo "error: workdir: $tmp_root" >&2
+  if [[ -n "$raw_log" ]]; then
+    echo "error: raw log: $raw_log" >&2
+  fi
+  exit 3
+}
+
+join_reviewers_with_state() {
+  local wanted_state="$1"
+  local matches=()
+  local i state
 
   for i in "${!reviewers[@]}"; do
     state="${reviewer_states[$i]}"
-    reviewer="${reviewers[$i]}"
-    pid="${reviewer_pids[$i]}"
-    reviewer_out="${reviewer_out_files[$i]}"
-    reviewer_raw="${reviewer_raw_files[$i]}"
-
-    case "$state" in
+    case "$wanted_state" in
       success)
-        completed_count=$((completed_count + 1))
-        continue
+        [[ "$state" == "success" ]] && matches+=("${reviewers[$i]}")
         ;;
-      failed:*)
-        unresolved_parts+=("${reviewer}(${state#failed:})")
-        continue
+      failed)
+        [[ "$state" == failed:* ]] && matches+=("${reviewers[$i]}(${state#failed:})")
         ;;
     esac
-
-    if kill -0 "$pid" >/dev/null 2>&1; then
-      active_count=$((active_count + 1))
-      unresolved_parts+=("${reviewer}(running)")
-      continue
-    fi
-
-    if wait "$pid"; then
-      exit_code=0
-    else
-      exit_code=$?
-    fi
-    reviewer_exit_codes[i]="$exit_code"
-
-    fail_reason=""
-    if [[ "$exit_code" -ne 0 ]]; then
-      fail_reason="exit=$exit_code"
-    elif [[ ! -s "$reviewer_out" ]]; then
-      fail_reason="empty-output"
-    elif grep -Eq '(^REVIEW FAILED$|^Missing reviewers:|REVIEW FAILED[[:space:]]*$)' "$reviewer_out"; then
-      fail_reason="invalid-output"
-    elif ! reviewer_output_has_evidence "$reviewer_out"; then
-      fail_reason="missing-review-evidence"
-    fi
-
-    if [[ -n "$fail_reason" ]]; then
-      reviewer_states[i]="failed:$fail_reason"
-      unresolved_parts+=("${reviewer}($fail_reason)")
-      if [[ -n "$raw_log" ]]; then
-        printf 'reviewer.failed\tname=%s\treason=%s\texit=%s\traw=%s\toutput=%s\n' \
-          "$reviewer" "$fail_reason" "$exit_code" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
-      fi
-    else
-      reviewer_states[i]="success"
-      completed_count=$((completed_count + 1))
-      if [[ -n "$raw_log" ]]; then
-        printf 'reviewer.completed\tname=%s\texit=%s\traw=%s\toutput=%s\n' \
-          "$reviewer" "$exit_code" "$artifact_dir/$reviewer.raw.jsonl" "$artifact_dir/$reviewer.out.md" >>"$raw_log"
-      fi
-    fi
   done
 
-  if [[ ${#unresolved_parts[@]} -eq 0 ]]; then
-    unresolved='-'
+  if [[ ${#matches[@]} -eq 0 ]]; then
+    printf 'None'
   else
-    unresolved="$(join_by ', ' "${unresolved_parts[@]}")"
+    join_by ', ' "${matches[@]}"
   fi
-  progress="${completed_count}/${required_count}"$'\t'"$unresolved"
+}
 
-  if [[ "$progress" != "$last_progress" ]]; then
-    now_ts="$(date +%s)"
-    if [[ "$last_progress_at" -eq 0 || $(( now_ts - last_progress_at )) -ge 2 ]]; then
-      printf 'pr-review: progress %s\n' "$progress" >&2
-      last_progress="$progress"
-      last_progress_at="$now_ts"
-    fi
+write_partial_failure_report() {
+  local partial_report="$artifact_dir/partial-review-report.md"
+
+  {
+    printf '# FAILED REVIEW - PARTIAL OUTPUTS\n\n'
+    printf 'Review failed before synthesis. This is not a successful final PR review.\n\n'
+    printf 'Completed reviewers: %s\n\n' "$(join_reviewers_with_state success)"
+    printf 'Failed reviewers: %s\n\n' "$(join_reviewers_with_state failed)"
+    printf 'Raw completed-reviewer findings are preserved below for recovery/adjudication. Treat them as partial outputs, not a synthesized report.\n\n'
+    cat "$reviewer_outputs_file"
+  } >"$partial_report"
+
+  cp "$partial_report" "$output_file"
+  if [[ -n "$raw_log" ]]; then
+    printf 'reviewer.partial_report_preserved\tpath=%s\toutput=%s\n' "$partial_report" "$output_file" >>"$raw_log"
   fi
+}
 
-  if [[ "$active_count" -eq 0 ]]; then
-    break
-  fi
-
-  sleep 2
+for packet_i in "${!packet_files[@]}"; do
+  shard_number=$((packet_i + 1))
+  shard_label="${shard_number}/${packet_count}"
+  for reviewer in "${first_wave_reviewers[@]}"; do
+    append_reviewer_task "$reviewer" "$shard_number" "$shard_label" "${packet_files[$packet_i]}"
+  done
 done
 
-{
-  printf '# Reviewer Outputs\n\n'
-  printf 'Review scope: %s\n\n' "$scope_label"
-  printf 'Packet shards: %s\n\n' "$packet_count"
-  for i in "${!reviewers[@]}"; do
-    reviewer="${reviewers[$i]}"
-    base_reviewer="${reviewer_base_names[$i]}"
-    shard_label="${reviewer_shard_labels[$i]}"
-    packet_path="${reviewer_packet_files[$i]}"
-    reviewer_out="${reviewer_out_files[$i]}"
-    reviewer_raw="${reviewer_raw_files[$i]}"
-    reviewer_prompt="${reviewer_prompt_files[$i]}"
-    reviewer_artifact_out="$artifact_dir/$reviewer.out.md"
-    reviewer_artifact_raw="$artifact_dir/$reviewer.raw.jsonl"
-    reviewer_artifact_prompt="$artifact_dir/$reviewer.prompt.md"
+for i in "${!reviewers[@]}"; do
+  launch_reviewer_task "$i"
+done
+first_wave_end="${#reviewers[@]}"
+wait_for_reviewers "first-wave" 0 "$first_wave_end"
+write_reviewer_outputs "$first_wave_outputs_file" "First-Wave Reviewer Outputs"
+cp "$first_wave_outputs_file" "$artifact_dir/first-wave-reviewer-outputs.md"
+if [[ -n "$raw_log" ]]; then
+  printf 'reviewer.first_wave_outputs_preserved\tpath=%s\n' "$artifact_dir/first-wave-reviewer-outputs.md" >>"$raw_log"
+fi
+fail_if_reviewers_failed
 
-    [[ -f "$reviewer_out" ]] && cp "$reviewer_out" "$reviewer_artifact_out"
-    [[ -f "$reviewer_raw" ]] && cp "$reviewer_raw" "$reviewer_artifact_raw"
-    [[ -f "$reviewer_prompt" ]] && cp "$reviewer_prompt" "$reviewer_artifact_prompt"
+simplifier_start_index="${#reviewers[@]}"
+for packet_i in "${!packet_files[@]}"; do
+  shard_number=$((packet_i + 1))
+  shard_label="${shard_number}/${packet_count}"
+  append_reviewer_task "code-simplifier" "$shard_number" "$shard_label" "${packet_files[$packet_i]}"
+done
 
-    printf '## %s\n\n' "$reviewer"
-    printf 'Base reviewer: %s\n\n' "$base_reviewer"
-    printf 'Shard: %s\n\n' "$shard_label"
-    printf 'Packet artifact: %s\n\n' "$artifact_dir/$(basename "$packet_path")"
-    if [[ -s "$reviewer_out" ]]; then
-      cat "$reviewer_out"
-    else
-      printf 'No reviewer output captured.\n'
-    fi
-    printf '\n\n'
-  done
-} >"$reviewer_outputs_file"
+for ((i = simplifier_start_index; i < ${#reviewers[@]}; i++)); do
+  launch_reviewer_task "$i"
+done
+simplifier_end="${#reviewers[@]}"
+wait_for_reviewers "code-simplifier" "$simplifier_start_index" "$simplifier_end"
+write_reviewer_outputs "$reviewer_outputs_file" "Reviewer Outputs"
 
 printf 'pr-review: reviewer outputs -> %s\n' "$reviewer_outputs_file" >&2
 if [[ -n "$raw_log" ]]; then
   printf 'reviewer.outputs_preserved\tpath=%s\tartifact_dir=%s\n' "$reviewer_outputs_file" "$artifact_dir" >>"$raw_log"
 fi
 
-failed_reviewers=()
-for i in "${!reviewers[@]}"; do
-  if [[ "${reviewer_states[$i]}" != "success" ]]; then
-    if [[ "${reviewer_states[$i]}" == failed:* ]]; then
-      failed_reviewers+=("${reviewers[$i]}(${reviewer_states[$i]#failed:})")
-    else
-      failed_reviewers+=("${reviewers[$i]}(${reviewer_states[$i]})")
-    fi
-  fi
-done
-
-if [[ ${#failed_reviewers[@]} -gt 0 ]]; then
-  echo "error: pr-review reviewers did not complete cleanly" >&2
-  echo "error: failed reviewers: $(join_by ', ' "${failed_reviewers[@]}")" >&2
-  echo "error: reviewer outputs: $reviewer_outputs_file" >&2
-  echo "error: workdir: $tmp_root" >&2
-  if [[ -n "$raw_log" ]]; then
-    echo "error: raw log: $raw_log" >&2
-  fi
-  exit 3
-fi
+fail_if_reviewers_failed
 
 run_synthesis_checked() {
   local label="$1"
   local prompt_path="$2"
   local out_path="$3"
   local raw_path="$4"
-  local prompt_bytes codex_status
+  local prompt_bytes codex_status start_ts completed_ts duration_seconds
 
   prompt_bytes="$(packet_size_bytes "$prompt_path")"
   if [[ "$prompt_bytes" -gt "$max_packet_bytes" ]]; then
@@ -1130,16 +1392,21 @@ run_synthesis_checked() {
   fi
 
   if [[ -n "$raw_log" ]]; then
-    printf 'synthesis.started\tlabel=%s\traw=%s\toutput=%s\tbytes=%s\n' "$label" "$raw_path" "$out_path" "$prompt_bytes" >>"$raw_log"
+    start_ts="$(now_epoch)"
+    printf 'synthesis.started\tts=%s\tlabel=%s\traw=%s\toutput=%s\tbytes=%s\n' "$start_ts" "$label" "$raw_path" "$out_path" "$prompt_bytes" >>"$raw_log"
+  else
+    start_ts="$(now_epoch)"
   fi
 
   set +e
   run_codex_prompt "$prompt_path" "$out_path" "$raw_path"
   codex_status=$?
   set -e
+  completed_ts="$(now_epoch)"
+  duration_seconds=$((completed_ts - start_ts))
 
   if [[ -n "$raw_log" ]]; then
-    printf 'synthesis.completed\tlabel=%s\texit=%s\traw=%s\toutput=%s\n' "$label" "$codex_status" "$raw_path" "$out_path" >>"$raw_log"
+    printf 'synthesis.completed\tts=%s\tlabel=%s\texit=%s\tduration=%s\traw=%s\toutput=%s\n' "$completed_ts" "$label" "$codex_status" "$duration_seconds" "$raw_path" "$out_path" >>"$raw_log"
   fi
 
   if [[ "$codex_status" -eq 124 ]]; then
@@ -1206,6 +1473,8 @@ Rules:
 - Preserve findings-first output
 - Use **Critical Issues** for confidence >= 91
 - Use **Important Issues** for confidence 75-90
+- Do not promote candidate findings below confidence 75 into Critical or Important sections.
+- If reviewer outputs include candidate findings below confidence 75, add one short note that lower-confidence candidates were preserved in reviewer artifacts.
 - Deduplicate overlapping findings across reviewers
 - Keep issues tied to changed behavior in this diff
 - For code defects, keep only findings tied to ADDED or MODIFIED lines
@@ -1286,8 +1555,11 @@ Review scope:
 
 Scope: $scope_label
 Packet shards: $packet_count
+Review mode: $review_mode
+Reviewer candidate threshold: $candidate_threshold
 Base reviewer set: $(join_by ', ' "${base_reviewers[@]}")
 Artifact directory: $artifact_dir
+Acceptance context artifact: $artifact_dir/acceptance-context.md
 
 Changed files:
 
