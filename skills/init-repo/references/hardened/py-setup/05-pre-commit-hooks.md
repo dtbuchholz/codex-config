@@ -17,7 +17,7 @@ This is the full configuration. It uses a mix of remote hooks (maintained by the
 local hooks (using the project's own tool versions via `uv run`).
 
 ```yaml
-# repo-quality-rails
+# init-repo-hardened
 # Pre-commit configuration for Python quality gates
 # Install: uv run pre-commit install && uv run pre-commit install --hook-type pre-push
 
@@ -183,7 +183,7 @@ Remove it entirely if your project has no database:
 
 ## Sentinel Marker
 
-The first line of `.pre-commit-config.yaml` contains `# repo-quality-rails`. This is the sentinel
+The first line of `.pre-commit-config.yaml` contains `# init-repo-hardened`. This is the sentinel
 marker that SKILL.md checks to detect an existing setup. Do not remove it.
 
 ## Verification

@@ -1,7 +1,8 @@
 # Python Design Metrics
 
 Complexity metrics, architecture boundaries, and design health enforcement for Python projects. This
-is the Python equivalent of the ESLint-based design metrics in `references/design-metrics.md`.
+is the Python equivalent of the ESLint-based design metrics in
+`references/hardened/modules/design-metrics.md`.
 
 ## 1. Complexity Analysis with Radon
 

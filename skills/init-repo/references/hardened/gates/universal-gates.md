@@ -1,8 +1,8 @@
 # Universal Quality Gates for Any Language
 
-> **Python projects:** Use the dedicated Python setup path (`references/py-setup/guide.md`) instead
-> of this guide. It provides prescriptive, copy-paste-able configurations with the same depth as the
-> TypeScript path.
+> **Python projects:** Use the dedicated Python setup path (`references/hardened/py-setup/guide.md`)
+> instead of this guide. It provides prescriptive, copy-paste-able configurations with the same
+> depth as the TypeScript path.
 
 This reference maps every quality gate from the TypeScript monorepo setup to its language-agnostic
 equivalent. The three-layer structure (pre-commit, pre-push, CI) is identical regardless of
@@ -467,7 +467,7 @@ brew install pre-commit
 ### .pre-commit-config.yaml
 
 ```yaml
-# repo-quality-rails
+# init-repo-hardened
 repos:
   # Universal hooks (all languages)
   - repo: https://github.com/pre-commit/pre-commit-hooks

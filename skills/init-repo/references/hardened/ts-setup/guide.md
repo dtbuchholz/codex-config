@@ -29,27 +29,27 @@ After each step, **stop and confirm** before proceeding.
 
 ## Steps (load one file at a time)
 
-1. `references/ts-setup/01-workspace-structure.md`
-2. `references/ts-setup/02-package-patterns.md`
-3. `references/ts-setup/03-turbo-pipeline.md`
-4. `references/ts-setup/04-tsconfig-and-exports.md`
-5. `references/ts-setup/05-root-package-json.md`
-6. `references/ts-setup/06-tooling-configs.md`
-7. `references/ts-setup/07-git-hooks.md`
-8. `references/ts-setup/08-changesets.md`
-9. `references/ts-setup/09-dependencies-and-checklist.md`
+1. `references/hardened/ts-setup/01-workspace-structure.md`
+2. `references/hardened/ts-setup/02-package-patterns.md`
+3. `references/hardened/ts-setup/03-turbo-pipeline.md`
+4. `references/hardened/ts-setup/04-tsconfig-and-exports.md`
+5. `references/hardened/ts-setup/05-root-package-json.md`
+6. `references/hardened/ts-setup/06-tooling-configs.md`
+7. `references/hardened/ts-setup/07-git-hooks.md`
+8. `references/hardened/ts-setup/08-changesets.md`
+9. `references/hardened/ts-setup/09-dependencies-and-checklist.md`
 
 ## Optional Modules (load only if the user opts in)
 
-- `references/design-metrics.md`
-- `references/mutation-testing.md`
-- `references/architecture-analysis.md`
-- `references/refactoring-playbook.md`
-- `references/design-patterns-as-rules.md`
+- `references/hardened/modules/design-metrics.md`
+- `references/hardened/modules/mutation-testing.md`
+- `references/hardened/modules/architecture-analysis.md`
+- `references/hardened/modules/refactoring-playbook.md`
+- `references/hardened/modules/design-patterns-as-rules.md`
 
 ## Deep Dives (only if needed)
 
-- `references/eslint-architecture.md`
-- `references/test-infrastructure.md`
-- `references/database-safety.md`
-- `references/code-duplication.md`
+- `references/hardened/modules/eslint-architecture.md`
+- `references/hardened/gates/test-infrastructure.md`
+- `references/hardened/modules/database-safety.md`
+- `references/hardened/modules/code-duplication.md`

@@ -2,7 +2,7 @@
 
 Deep dive into pytest setup, fixture architecture, Hypothesis property-based testing, coverage
 enforcement, and integration test patterns. This is the Python equivalent of
-`references/test-infrastructure.md`.
+`references/hardened/gates/test-infrastructure.md`.
 
 ## 1. Why pytest
 

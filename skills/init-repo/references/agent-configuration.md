@@ -8,12 +8,11 @@ follow team standards from their first interaction.
 
 ### Files
 
-| File                 | Purpose                                                                      |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `AGENTS.md`          | All agent instructions — cross-tool compatible (Claude, Cursor, Codex, etc.) |
-| `CLAUDE.md`          | Minimal file that imports AGENTS.md via `@AGENTS.md` (Claude Code)           |
-| `CODEX.md`           | Optional Codex project context file that references/summarizes AGENTS.md     |
-| `AGENT-LEARNINGS.md` | Knowledge capture — insights from agent sessions                             |
+| File        | Purpose                                                                      |
+| ----------- | ---------------------------------------------------------------------------- |
+| `AGENTS.md` | All agent instructions — cross-tool compatible (Claude, Cursor, Codex, etc.) |
+| `CLAUDE.md` | Minimal file that imports AGENTS.md via `@AGENTS.md` (Claude Code)           |
+| `CODEX.md`  | Optional Codex project context file that references/summarizes AGENTS.md     |
 
 ### AGENTS.md Structure
 
@@ -60,14 +59,11 @@ the canonical source of shared agent standards. `CODEX.md` should stay minimal a
 
 The managed section enforces:
 
-- **Commits**: Conventional format. Co-Authored-By trailers. No `--no-verify`. Learning capture in
-  AGENT-LEARNINGS.md.
+- **Commits**: Conventional format. Co-Authored-By trailers. No `--no-verify`.
 - **Code quality**: No `any` in TypeScript. No silent fallbacks. No dead code. Hooks are
   non-negotiable.
 - **Development**: TDD for all new features and bug fixes. Bug detection before bug fix. Plan before
   implementing. Verify before claiming completion.
-- **Knowledge capture**: AGENT-LEARNINGS.md with Insight/Detail/Directive/Context format.
-  High-leverage insights only. Zero learnings is valid.
 
 ## Integration with Quality Rails
 
@@ -95,4 +91,3 @@ Repos that already have AGENTS.md, CLAUDE.md, or CODEX.md:
   are preserved.
 - **CODEX.md exists**: Preserve Codex-specific context, but move shared standards into AGENTS.md so
   all tools read the same rules.
-- **AGENT-LEARNINGS.md exists**: Left untouched. Existing learnings are preserved.

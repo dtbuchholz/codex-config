@@ -2,7 +2,8 @@
 
 Deep dive into import-linter boundary contracts, dependency visualization with pydeps, and circular
 import detection. This is the Python equivalent of the architecture boundary enforcement in
-`references/eslint-architecture.md` and `references/architecture-analysis.md`.
+`references/hardened/modules/eslint-architecture.md` and
+`references/hardened/modules/architecture-analysis.md`.
 
 ## 1. Why Architecture Enforcement
 

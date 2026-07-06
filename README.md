@@ -52,7 +52,7 @@ MCP config (`.mcp.json`) should use a portable command so it works across machin
 }
 ```
 
-For date-specific recall from conversation digests:
+For date-specific lookup from conversation digests:
 
 ```bash
 ~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5

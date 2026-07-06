@@ -28,25 +28,25 @@ After each step, **stop and confirm** before proceeding.
 
 ## Steps (load one file at a time)
 
-1. `references/py-setup/01-project-structure.md`
-2. `references/py-setup/02-ruff-config.md`
-3. `references/py-setup/03-mypy-strict.md`
-4. `references/py-setup/04-pytest-config.md`
-5. `references/py-setup/05-pre-commit-hooks.md`
-6. `references/py-setup/06-pre-push-script.md`
-7. `references/py-setup/07-ci-pipeline.md`
-8. `references/py-setup/08-dependencies-and-checklist.md`
+1. `references/hardened/py-setup/01-project-structure.md`
+2. `references/hardened/py-setup/02-ruff-config.md`
+3. `references/hardened/py-setup/03-mypy-strict.md`
+4. `references/hardened/py-setup/04-pytest-config.md`
+5. `references/hardened/py-setup/05-pre-commit-hooks.md`
+6. `references/hardened/py-setup/06-pre-push-script.md`
+7. `references/hardened/py-setup/07-ci-pipeline.md`
+8. `references/hardened/py-setup/08-dependencies-and-checklist.md`
 
 ## Optional Modules (load only if the user opts in)
 
-- `references/py-design-metrics.md`
-- `references/py-mutation-testing.md`
-- `references/py-architecture-enforcement.md`
-- `references/design-metrics.md` (cross-language, includes Python section)
-- `references/refactoring-playbook.md` (cross-language)
+- `references/hardened/modules/py-design-metrics.md`
+- `references/hardened/modules/py-mutation-testing.md`
+- `references/hardened/modules/py-architecture-enforcement.md`
+- `references/hardened/modules/design-metrics.md` (cross-language, includes Python section)
+- `references/hardened/modules/refactoring-playbook.md` (cross-language)
 
 ## Deep Dives (only if needed)
 
-- `references/py-test-infrastructure.md`
-- `references/database-safety.md` (cross-language, includes Alembic)
-- `references/code-duplication.md` (cross-language)
+- `references/hardened/gates/py-test-infrastructure.md`
+- `references/hardened/modules/database-safety.md` (cross-language, includes Alembic)
+- `references/hardened/modules/code-duplication.md` (cross-language)

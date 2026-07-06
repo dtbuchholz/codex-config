@@ -1175,8 +1175,8 @@ This matters because 100% code coverage with a 60% mutation score means 40% of y
 has never had its behavior checked. Coverage measures execution. Mutation testing measures
 verification.
 
-See `references/mutation-testing.md` for the full deep-dive: threshold strategies, per-language
-equivalents (Python, Go, Rust, Java), anti-gaming analysis, and ratcheting workflows.
+See `references/hardened/modules/mutation-testing.md` for the full deep-dive: threshold strategies,
+per-language equivalents (Python, Go, Rust, Java), anti-gaming analysis, and ratcheting workflows.
 
 ### Installation
 

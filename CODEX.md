@@ -111,7 +111,7 @@ qmd query "open-ended question"   # hybrid with reranking (best quality)
 
 Default to `qmd query` when unsure. Fall back to `rg` for code-level searches in source trees.
 
-For time-scoped recall, use:
+For time-scoped lookup, use:
 
 ```bash
 ~/.codex/scripts/qmd-temporal-recall.py "last Tuesday" "what did I do?" --source both --top 5

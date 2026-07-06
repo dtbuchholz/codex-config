@@ -35,7 +35,7 @@ stage (configured in Step 05).
 
 ```bash
 #!/usr/bin/env bash
-# repo-quality-rails: Python pre-push verification
+# init-repo-hardened: Python pre-push verification
 # This script is invoked by the pre-commit framework's pre-push stage.
 # It mirrors the CI pipeline exactly.
 set -euo pipefail

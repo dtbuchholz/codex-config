@@ -1,17 +1,17 @@
 # Step 07 — Git Hooks (Husky)
 
 This step installs and configures pre-commit and pre-push hooks. These scripts include the
-`# repo-quality-rails` marker used for the sentinel check.
+`# init-repo-hardened` marker used for the sentinel check.
 
 > **Note:** These are the essential hook scripts. For full-featured versions with colored output,
-> per-gate timing, and scoped package detection, see `references/pre-commit-gates.md` and
-> `references/pre-push-gates.md`.
+> per-gate timing, and scoped package detection, see `references/hardened/gates/pre-commit-gates.md`
+> and `references/hardened/gates/pre-push-gates.md`.
 
 ## .husky/pre-commit
 
 ```bash
 #!/usr/bin/env bash
-# repo-quality-rails
+# init-repo-hardened
 set -euo pipefail
 
 # 0. Lint-staged (Prettier auto-fix on staged files)
@@ -108,7 +108,7 @@ echo "Pre-commit passed"
 
 ```bash
 #!/usr/bin/env bash
-# repo-quality-rails
+# init-repo-hardened
 set -euo pipefail
 
 # Ensure local branch is not behind origin/main

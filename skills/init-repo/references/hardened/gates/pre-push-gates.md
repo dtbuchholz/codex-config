@@ -222,7 +222,7 @@ migration with `drizzle-kit generate`.
 
 ```bash
 #!/usr/bin/env bash
-# repo-quality-rails
+# init-repo-hardened
 set -euo pipefail
 
 # ============================================================================

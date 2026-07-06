@@ -60,7 +60,7 @@ where noted) and provides clear output for each gate.
 
 ```bash
 #!/usr/bin/env bash
-# repo-quality-rails
+# init-repo-hardened
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────

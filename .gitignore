@@ -47,7 +47,9 @@ scripts/*.conf
 .vscode/
 .idea/
 *.swp
-.codex-global-state.json
+.codex-global-state.json*
+ambient-suggestions/
+computer-use/
 sqlite/
 vendor_imports/
 scripts/__pycache__/

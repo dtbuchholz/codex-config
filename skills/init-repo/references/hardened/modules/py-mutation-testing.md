@@ -1,7 +1,8 @@
 # Python Mutation Testing
 
 Deep dive into mutmut setup, configuration, CI integration, and strategies for improving mutation
-scores. This is the Python equivalent of `references/mutation-testing.md` (Stryker for TypeScript).
+scores. This is the Python equivalent of `references/hardened/modules/mutation-testing.md` (Stryker
+for TypeScript).
 
 ## 1. Why Mutation Testing
 
