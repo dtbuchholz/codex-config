@@ -3,25 +3,32 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 model = "gpt-5.5"
 personality = "pragmatic"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 plan_mode_reasoning_effort = "high"
 suppress_unstable_features_warning = true
-
-[sandbox_workspace_write]
-network_access = true
+approvals_reviewer = "user"
 
 [features]
-js_repl = true
 multi_agent = true
-codex_hooks = true
 memories = true
 apps = false
+hooks = true
 
 [tui]
 status_line = ["model-with-reasoning", "context-remaining", "current-dir", "five-hour-limit"]
 
 [tui.model_availability_nux]
-"gpt-5.5" = 3
+"gpt-5.5" = 4
 
-[notice.model_migrations]
-"gpt-5.3-codex" = "gpt-5.4"
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+

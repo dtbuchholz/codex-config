@@ -2,20 +2,22 @@
 # Copy to config.toml and adjust for your machine:
 #   cp config.toml.template config.toml
 
-policy = "never"
+approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
-model = "gpt-5.3-codex"
+model = "gpt-5.5"
 personality = "pragmatic"
+model_reasoning_effort = "xhigh"
+plan_mode_reasoning_effort = "high"
+approvals_reviewer = "user"
 # Optional: a script to send notifications on MacOS
 # notify = ["python3", "~/.codex/hooks/notify-codex.py"]
 
-[sandbox_workspace_write]
-network_access = true
-
 [features]
-js_repl = true
 multi_agent = true
+memories = true
+apps = false
+hooks = true
 
 # Optional: mark local projects as trusted
 # [projects."/absolute/path/to/repo"]
