@@ -52,6 +52,13 @@ make_fake_codex() {
 set -euo pipefail
 
 out_path=""
+if [[ -n "${FAKE_CODEX_ARG_LOG:-}" ]]; then
+  printf '%s\n' "$*" >>"$FAKE_CODEX_ARG_LOG"
+fi
+if [[ -n "${FAKE_CODEX_STDERR:-}" ]]; then
+  printf '%s\n' "$FAKE_CODEX_STDERR" >&2
+fi
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -o)
@@ -59,6 +66,13 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -C)
+      shift 2
+      ;;
+    --enable|--disable)
+      if [[ "$2" != "memories" ]]; then
+        echo "Error: Unknown feature flag: $2" >&2
+        exit 2
+      fi
       shift 2
       ;;
     *)
@@ -134,7 +148,12 @@ EOF
 
 report="$TMP_ROOT/report.md"
 raw_log="$TMP_ROOT/raw.log"
+codex_arg_log="$TMP_ROOT/codex-args.log"
+FAKE_CODEX_ARG_LOG="$codex_arg_log" \
+FAKE_CODEX_STDERR="fake codex stderr" \
 PATH="$fakebin:$PATH" "$WRAPPER" "$repo" \
+  --deep \
+  --uncommitted \
   --output-file "$report" \
   --raw-log "$raw_log" \
   --acceptance-context "$context_file" \
@@ -144,23 +163,39 @@ artifacts="$report.artifacts"
 assert_file_contains "$report" '^7 of 7 agents completed$'
 assert_file_contains "$raw_log" '^wrapper\.mode[[:space:]]+thorough$'
 assert_file_contains "$raw_log" '^wrapper\.candidate_threshold[[:space:]]+60$'
+assert_file_contains "$raw_log" '^wrapper\.base_timeout_seconds[[:space:]]+300$'
+assert_file_contains "$raw_log" '^wrapper\.security_timeout_seconds[[:space:]]+600$'
+assert_file_contains "$raw_log" '^wrapper\.silent_failure_timeout_seconds[[:space:]]+600$'
 assert_file_contains "$raw_log" '^wrapper\.first_wave_tasks[[:space:]]+6$'
 assert_file_contains "$raw_log" '^wrapper\.simplifier_tasks[[:space:]]+1$'
+assert_file_contains "$raw_log" 'reviewer\.started.*name=code-reviewer-shard-1.*timeout=300'
+assert_file_contains "$raw_log" 'reviewer\.started.*name=security-reviewer-shard-1.*timeout=600'
+assert_file_contains "$raw_log" 'reviewer\.started.*name=silent-failure-hunter-shard-1.*timeout=600'
 assert_file_contains "$raw_log" 'reviewer\.phase_progress.*phase=first-wave.*progress=6/6'
 assert_file_contains "$raw_log" 'reviewer\.phase_progress.*phase=code-simplifier.*progress=1/1'
 assert_line_order "$raw_log" 'reviewer\.first_wave_outputs_preserved' 'reviewer\.started.*code-simplifier-shard-1'
 assert_file_contains "$raw_log" 'reviewer\.completed.*duration='
+assert_file_contains "$raw_log" 'reviewer\.completed.*stderr='
 assert_file_contains "$raw_log" 'synthesis\.completed.*duration='
+assert_file_contains "$raw_log" 'synthesis\.completed.*stderr='
+assert_file_contains "$codex_arg_log" 'exec --sandbox read-only -c approval_policy="never" --disable memories'
+assert_file_not_contains "$TMP_ROOT/run.stderr" 'fake codex stderr'
+assert_file_not_contains "$TMP_ROOT/run.stderr" 'ripgrep requires at least one pattern'
 assert_file_contains "$artifacts/code-reviewer-shard-1.prompt.md" 'You may use read-only tools or shell commands'
 assert_file_contains "$artifacts/code-reviewer-shard-1.prompt.md" 'Keep read-only context bounded'
+assert_file_contains "$artifacts/code-reviewer-shard-1.prompt.md" 'Runtime-required skill instructions still apply'
 assert_file_contains "$artifacts/code-reviewer-shard-1.prompt.md" 'Return candidate findings with confidence >= 60 and < 75'
 assert_file_contains "$artifacts/code-reviewer-shard-1.prompt.md" 'The change should reject invalid limits'
+assert_file_contains "$artifacts/code-reviewer-shard-1.stderr.log" 'fake codex stderr'
 assert_file_contains "$artifacts/code-simplifier-shard-1.prompt.md" 'First-wave reviewer outputs for simplifier context'
 assert_file_contains "$artifacts/first-wave-reviewer-outputs.md" '^# First-Wave Reviewer Outputs$'
+assert_file_contains "$artifacts/synthesis.prompt.md" 'High-Confidence Findings'
+assert_file_contains "$artifacts/synthesis.stderr.log" 'fake codex stderr'
 
 fast_report="$TMP_ROOT/fast-report.md"
 fast_raw_log="$TMP_ROOT/fast-raw.log"
 PATH="$fakebin:$PATH" "$WRAPPER" "$repo" \
+  --deep \
   --output-file "$fast_report" \
   --raw-log "$fast_raw_log" \
   --fast \
@@ -170,17 +205,20 @@ fast_artifacts="$fast_report.artifacts"
 assert_file_contains "$fast_report" '^7 of 7 agents completed$'
 assert_file_contains "$fast_raw_log" '^wrapper\.mode[[:space:]]+fast$'
 assert_file_contains "$fast_raw_log" '^wrapper\.candidate_threshold[[:space:]]+75$'
+assert_file_contains "$fast_raw_log" '^wrapper\.security_timeout_seconds[[:space:]]+300$'
+assert_file_contains "$fast_raw_log" '^wrapper\.silent_failure_timeout_seconds[[:space:]]+300$'
 assert_file_contains "$fast_raw_log" '^wrapper\.first_wave_tasks[[:space:]]+6$'
 assert_file_contains "$fast_raw_log" '^wrapper\.simplifier_tasks[[:space:]]+1$'
 assert_file_contains "$fast_raw_log" 'reviewer\.phase_progress.*phase=first-wave.*progress=6/6'
 assert_file_contains "$fast_raw_log" 'reviewer\.phase_progress.*phase=code-simplifier.*progress=1/1'
-assert_file_contains "$fast_artifacts/code-reviewer-shard-1.prompt.md" 'Do not run shell commands, read files'
+assert_file_contains "$fast_artifacts/code-reviewer-shard-1.prompt.md" 'Analyze the supplied packet without repository tools'
 assert_file_contains "$fast_artifacts/code-reviewer-shard-1.prompt.md" 'Return only findings with confidence >= 75'
 
 fail_report="$TMP_ROOT/fail-report.md"
 fail_raw_log="$TMP_ROOT/fail-raw.log"
 set +e
 FAKE_CODEX_FAIL_REVIEWER=silent-failure-hunter PATH="$fakebin:$PATH" "$WRAPPER" "$repo" \
+  --deep \
   --output-file "$fail_report" \
   --raw-log "$fail_raw_log" \
   --cleanup-tmp >/dev/null 2>"$TMP_ROOT/fail.stderr"
@@ -203,4 +241,37 @@ assert_file_contains "$fail_report" 'Failed reviewers: silent-failure-hunter-sha
 assert_file_contains "$fail_artifacts/partial-review-report.md" '^# FAILED REVIEW - PARTIAL OUTPUTS$'
 assert_file_contains "$TMP_ROOT/fail.stderr" 'partial failure report:'
 
-echo "run-pr-review wrapper tests passed"
+if command -v script >/dev/null 2>&1 && script -q /dev/null true >/dev/null 2>&1; then
+  pty_report="$TMP_ROOT/pty-report.md"
+  pty_raw_log="$TMP_ROOT/pty-raw.log"
+  python3 - "$fakebin" "$WRAPPER" "$repo" "$pty_report" "$pty_raw_log" \
+    >/dev/null 2>"$TMP_ROOT/pty.stderr" <<'PY'
+import os
+import subprocess
+import sys
+
+fakebin, wrapper, repo, report, raw_log = sys.argv[1:]
+subprocess.run(
+    ["script", "-q", "/dev/null", "env", f"PATH={fakebin}:{os.environ['PATH']}",
+     wrapper, repo, "--deep", "--output-file", report, "--raw-log", raw_log,
+     "--mode", "thorough", "--cleanup-tmp"],
+    check=True, timeout=30,
+)
+PY
+  assert_file_contains "$pty_report" '^7 of 7 agents completed$'
+  assert_file_contains "$pty_raw_log" 'reviewer\.phase_progress.*phase=first-wave.*progress=6/6'
+fi
+
+# Exercise native-style scope flags through the deep dispatcher as well.
+git -C "$repo" add src/app.ts
+git -C "$repo" commit -q -m "change"
+for scope_flag in --base --commit; do
+  scope_ref=HEAD
+  [[ "$scope_flag" != --base ]] || scope_ref=HEAD~1
+  scope_report="$TMP_ROOT/scope-${scope_flag#--}.md"
+  PATH="$fakebin:$PATH" "$WRAPPER" "$repo" --deep "$scope_flag" "$scope_ref" \
+    --fast --output-file "$scope_report" --cleanup-tmp >/dev/null 2>"$TMP_ROOT/scope.stderr"
+  assert_file_contains "$scope_report" '^7 of 7 agents completed$'
+done
+
+echo "deep review wrapper tests passed"

@@ -10,14 +10,12 @@ Create a single, well-formatted git commit following conventional commits.
 ## When This Skill Applies
 
 - User asks to commit changes
-- User says "/commit" or "commit this"
+- User says "$commit" or "commit this"
 
 ## Context
 
-- Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
-- Current branch: !`git branch --show-current`
-- Recent commits: !`git log --oneline -10`
+Run `git status`, `git diff HEAD`, `git branch --show-current`, and `git log --oneline -10` to
+inspect the current changes. Skill Markdown does not execute shell interpolation.
 
 ## Your Task
 
@@ -64,6 +62,5 @@ or equivalent) so body is not omitted.
 
 ### Execution
 
-You have the capability to call multiple tools in a single response. Stage and create the commit
-using a single message. Do not use any other tools or do anything else. Do not send any other text
-or messages besides these tool calls.
+Inspect the diff before staging. Stage only the requested files, respect existing git hooks, create
+the commit, and verify the resulting status. Report the commit hash and subject.

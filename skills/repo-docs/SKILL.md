@@ -5,10 +5,11 @@ description: >
   Init mode scaffolds the canonical docs tree and AGENTS.md, populates first-pass docs from existing
   repo sources, and aligns existing docs to the canonical shape. Audit mode performs advisory checks
   on structure, freshness, coverage, and drift. Requires no external packages or CLIs.
-argument-hint: "[init|audit]"
 ---
 
 ## Quick Reference
+
+Arguments: `[init|audit]`.
 
 This skill scaffolds and maintains the canonical docs shape by hand — no package manager, preset, or
 CLI is required. It works in any git repo regardless of language or stack.
@@ -56,8 +57,8 @@ Load these only as needed:
 
 ## When This Skill Applies
 
-- `/repo-docs` or `/repo-docs init` — bootstrap or reorganize docs
-- `/repo-docs audit` — advisory docs audit
+- `$repo-docs` or `$repo-docs init` — bootstrap or reorganize docs
+- `$repo-docs audit` — advisory docs audit
 - User asks to set up repo docs, create `AGENTS.md`, bootstrap docs structure, or audit repo docs
 
 ## Guard

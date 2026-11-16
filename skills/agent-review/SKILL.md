@@ -3,10 +3,11 @@ name: agent-review
 description: >
   Run a fresh-context secondary review with Claude (default) or Codex, then adjudicate findings in
   the current implementation session and apply fixes you agree with.
-argument-hint: "[claude|codex]"
 ---
 
 # Agent Review
+
+Arguments: `[claude|codex]`.
 
 Run a reviewer agent in a separate CLI session, then apply the reviewer feedback in the current
 session with implementer context.
@@ -64,8 +65,8 @@ Run:
 "$HOME/.codex/skills/agent-review/scripts/run-review.sh" "${REVIEWER}" "$(pwd)"
 ```
 
-The script runs explicit `/pr-review` in the reviewer session and writes the captured review to a
-system temp file by default. Capture the returned file path.
+The script requests `$pr-review` in Codex or `/pr-review` in Claude and writes the captured review
+to a system temp file by default. Capture the returned file path.
 
 ### 3. Adjudicate In Current Session
 

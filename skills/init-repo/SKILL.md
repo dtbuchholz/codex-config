@@ -4,10 +4,11 @@ description: >
   Initialize or audit a repository with starter, standard, hardened, or audit setup modes for
   JavaScript/TypeScript, Python, and Rust. Standard mode is the default. Hardened mode is the
   migrated quality-rails path and must only be used when explicitly requested.
-argument-hint: "[starter|standard|hardened|audit] [js|ts|python|rust]"
 ---
 
 # Init Repo
+
+Arguments: `[starter|standard|hardened|audit] [js|ts|python|rust]`.
 
 Set up or audit repository scaffolding and quality infrastructure. This skill is the single entry
 point for new repo initialization, practical repo baselines, and full quality-rails hardening.
@@ -21,7 +22,7 @@ point for new repo initialization, practical repo baselines, and full quality-ra
 | `hardened` | no       | yes      | Full quality rails with three-layer gates and optional advanced modules.  |
 | `audit`    | no       | no       | Read-only inspection that recommends starter/standard/hardened deltas.    |
 
-Use `standard` when the user says only `/init-repo`, "initialize this repo", or "create a project"
+Use `standard` when the user says only `$init-repo`, "initialize this repo", or "create a project"
 and does not name a mode.
 
 Use `hardened` only when the user explicitly asks for hardened, quality rails, full gates, a full

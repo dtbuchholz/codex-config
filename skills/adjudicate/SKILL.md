@@ -4,10 +4,11 @@ description: >
   Adjudicate externally-provided review feedback: agree or disagree with each finding, implement
   accepted fixes, validate, and commit. Use when the user pastes review output from another agent or
   reviewer, or provides a file path containing review feedback.
-argument-hint: "<pasted review or file path>"
 ---
 
 # Adjudicate Review Feedback
+
+Arguments: `<pasted review or file path>`.
 
 Take review feedback provided by the user, evaluate each finding against the current implementation
 context, implement agreed fixes, validate, and commit.
@@ -15,14 +16,14 @@ context, implement agreed fixes, validate, and commit.
 The user should be able to write only:
 
 ```text
-/adjudicate
+$adjudicate
 <pasted review feedback>
 ```
 
 or:
 
 ```text
-/adjudicate /path/to/review.md
+$adjudicate /path/to/review.md
 ```
 
 Do not require the user to restate "determine whether you agree, implement changes, validate, and

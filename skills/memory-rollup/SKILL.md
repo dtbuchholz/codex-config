@@ -11,12 +11,18 @@ Review, prune, and consolidate Codex CLI memory files across projects and global
 
 ## When This Skill Applies
 
-- User explicitly says "/memory-rollup"
+- User explicitly says "$memory-rollup"
 - Do NOT activate automatically — this skill requires explicit invocation
 
 ## Memory Layout
 
-The current Codex CLI memory store lives under `~/.codex/memories/`:
+Before reading or writing, determine the memory root and mutation rules from the current session's
+memory instructions. Local versions may use `~/.codex/memories/` or `~/.codex/memories_v2/`. Do not
+merge those stores or infer which is active from timestamps. The paths below illustrate the legacy
+layout; substitute the runtime-provided root. If the session only permits extension notes, write
+proposed maintenance there rather than editing generated memory files.
+
+The legacy Codex CLI memory store lives under `~/.codex/memories/`:
 
 - `~/.codex/memories/MEMORY.md` — searchable registry of detailed task-group memory
 - `~/.codex/memories/memory_summary.md` — concise cross-project summary intended for prompt loading

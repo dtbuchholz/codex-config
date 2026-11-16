@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help setup deps config-init hooks-install hooks-verify gitleaks-install qmd-install dev-loop skills-lint
+.PHONY: help setup deps config-init hooks-install hooks-verify gitleaks-install qmd-install dev-loop skills-lint compatibility-check review-wrapper-test
 
 help:
 	@echo "Available targets:"
@@ -13,6 +13,8 @@ help:
 	@echo "  make qmd-install       Install QMD via npm"
 	@echo "  make dev-loop          Run Claude->Codex dev loop (set PROJECT= and SPEC= as needed)"
 	@echo "  make skills-lint       Check skills for legacy Task/AskUserQuestion wording"
+	@echo "  make compatibility-check Validate config, skills, agents, and CLI feature flags (requires uv)"
+	@echo "  make review-wrapper-test Run mocked PR review regression tests"
 
 setup: deps hooks-install
 
@@ -47,3 +49,10 @@ dev-loop:
 skills-lint:
 	@! rg -n "Task \\(|Task tool|AskUserQuestion" skills/*/SKILL.md -S >/dev/null
 	@echo "Skill lint passed."
+
+compatibility-check:
+	@uv run scripts/check-compatibility.py
+
+review-wrapper-test:
+	@python3 -m unittest discover -s skills/pr-review/tests -p 'test_*.py'
+	@bash skills/pr-review/tests/run-deep-review.test.sh

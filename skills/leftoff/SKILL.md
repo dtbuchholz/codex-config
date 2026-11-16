@@ -3,25 +3,26 @@ name: leftoff
 description: >
   Find where work left off across Claude and Codex sessions for a specific day. Summarizes active
   threads and returns concrete next actions using QMD time-scoped lookup.
-argument-hint: "<date> [repo-only]"
 ---
 
 # Left Off
+
+Arguments: `<date> [repo-only]`.
 
 Find where work left off across Claude + Codex sessions for a specific day.
 
 ## When This Skill Applies
 
-- `/leftoff yesterday`
-- `/leftoff 2026-03-25`
-- `/leftoff last Tuesday`
-- `/leftoff last Tuesday repo-only`
+- `$leftoff yesterday`
+- `$leftoff 2026-03-25`
+- `$leftoff last Tuesday`
+- `$leftoff last Tuesday repo-only`
 - User asks "where did we leave off?", "what were we working on yesterday?", "catch me up on last
   session"
 
 ## Input
 
-Format: `/leftoff <date phrase> [scope]`
+Format: `$leftoff <date phrase> [scope]`
 
 Accepted date phrases:
 

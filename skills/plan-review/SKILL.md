@@ -3,7 +3,7 @@ name: plan-review
 description: >
   Review and challenge a plan before implementation. Interactive, opinionated review with scope
   challenge, architecture/code quality/tests/performance passes, and failure mode analysis. Use when
-  the user asks to review a plan, challenge a plan, or says "/plan-review".
+  the user asks to review a plan, challenge a plan, or says "$plan-review".
 ---
 
 # Plan Review

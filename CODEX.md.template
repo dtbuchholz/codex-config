@@ -1,7 +1,7 @@
-# CODEX.md
+# AGENTS.md
 
 This file provides context to Codex CLI about your project. Copy this template to your project root
-and customize it.
+as `AGENTS.md` and customize it. Merge into an existing `AGENTS.md` rather than overwriting it.
 
 ## Project Overview
 

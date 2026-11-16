@@ -1,171 +1,65 @@
 ---
 name: review-and-fix
 description:
-  Run a fresh-context code review on current changes, then apply fixes based on findings. Useful
-  after implementing a feature to catch issues with an unbiased review.
+  Review current changes in a separate Codex session, adjudicate findings, apply warranted fixes,
+  and validate them. Commit only when requested.
 ---
 
-# Review and Fix
+# Review And Fix
 
-Run a code review with fresh context (no knowledge of implementation decisions), then apply your
-judgment to fix legitimate issues. This mimics having a separate reviewer look at your code.
+Use the same review runner as `$pr-review`, then evaluate and fix findings in the current
+implementation session. Default to a single native review of current uncommitted changes.
 
-## When This Skill Applies
+## Review
 
-- After implementing a feature, before committing
-- User says "/review-and-fix" or "review and fix"
-- User wants an unbiased review of their changes
-
-## Why Fresh Context Matters
-
-When you implement a feature, you have context about _why_ decisions were made. A fresh reviewer
-only sees _what_ was done, which helps catch:
-
-- Assumptions that aren't obvious from the code
-- Missing error handling you "knew" wouldn't happen
-- Unclear naming that made sense during implementation
-- Edge cases you implicitly handled in your head
-
-## Workflow
-
-### Step 1: Capture Current Changes
+Inspect `git status --short` and applicable `AGENTS.md` guidance. Honor an explicit branch or commit
+target; otherwise review staged, unstaged, and untracked changes together:
 
 ```bash
-# Get the diff that will be reviewed
-git diff main...HEAD 2>/dev/null || git diff HEAD~5
-
-# Get list of changed files
-git diff --name-only main...HEAD 2>/dev/null || git diff --name-only HEAD~5
+"$HOME/.codex/skills/pr-review/scripts/run-pr-review.sh" "$(pwd)" --uncommitted
 ```
 
-### Step 2: Read Project Guidelines
+Use `--base <branch>` or `--commit <sha>` for those targets. The helper starts a separate read-only
+session, saves diagnostics, and prints the report path. Read that report after successful
+completion. If review fails, surface its error and artifacts before applying review-driven changes.
+Do not treat partial findings as a successful completed review.
 
-```bash
-# Get CODEX.md for context the reviewer should have
-cat CODEX.md 2>/dev/null || true
-```
+For explicitly requested specialist/deep review, follow
+[the deep review reference](../pr-review/references/deep-review.md) and add `--deep`. Do not launch
+the specialist set simply because the normal reviewer is unavailable.
 
-### Step 3: Launch Fresh-Context Review Agent
+## Adjudicate And Fix
 
-**CRITICAL: Use `spawn_agent` with `agent_type: explorer` to create a fresh-context reviewer.** This
-reviewer has NO implementation context beyond what you pass it.
+Check each finding against the actual code, requested behavior, and tests. Accept, reject, or adjust
+it with a concrete reason. A confidence score alone is not evidence. Prioritize correctness,
+security, regressions, and meaningful missing tests; avoid unrelated cleanup.
 
-```
-spawn_agent(agent_type="explorer", message="
-You are reviewing code changes with NO prior context. You don't know why decisions were made -
-you only see the diff. This is intentional.
+Apply accepted fixes in the current session so implementation context remains available. Preserve
+unrelated working-tree changes. A review may find deletion-related defects or new-file bugs; do not
+restrict findings to added diff lines.
 
-## Project Guidelines (from CODEX.md)
-[paste relevant CODEX.md content]
+## Validate
 
-## Diff to Review
-[paste full diff]
+Run checks appropriate to the fixes before reporting success: focused regression tests and relevant
+lint, typecheck, or build commands. For a behavior fix, demonstrate the regression with a failing
+case before the fix when practical. Explain any checks that cannot run and their impact.
 
-## Your Task
+If a check fails because of the fixes, resolve it before continuing. Distinguish pre-existing
+failures from new ones. If no relevant automated check exists, perform a focused smoke check and
+state the remaining uncertainty.
 
-Review this diff for issues. Be critical but fair. For each issue:
+For substantial fixes, or when requested, run one follow-up review against the updated scope. Keep
+the scope aligned with the original target; a commit review alone will not include subsequent
+uncommitted repairs. Do not call a repaired commit clean based only on re-reviewing its old SHA.
+Stop after the initial repair pass and at most one follow-up review/repair pass unless the user
+requests continued iteration. Report unresolved findings or failures rather than looping
+indefinitely.
 
-1. Describe the problem
-2. Explain why it's a problem (not just 'looks wrong')
-3. Rate confidence (0-100):
-   - 90+: Definitely a bug or will cause problems
-   - 75-89: Very likely an issue, should fix
-   - 50-74: Possible issue, worth considering
-   - <50: Nitpick or uncertain
+## Finish
 
-IMPORTANT:
-- Only flag issues in the ADDED lines (+ lines in diff)
-- Don't flag pre-existing issues
-- Don't flag things a linter would catch
-- If something looks intentional, note it but lower confidence
+Report accepted and rejected findings, fixes, verification results, remaining issues, and review
+artifact paths. If there were no warranted fixes, say so.
 
-## Output Format
-
-For each issue:
-[CONFIDENCE: XX] file:line - Issue description
-WHY: Explanation of the impact
-
-If no significant issues: 'No issues found - code looks good.'
-
-End with a 1-2 sentence summary.
-")
-```
-
-Execution discipline:
-
-- Keep review agent read-only (`explorer`).
-- If diff is very large, split by file/chunk and launch multiple explorers in parallel.
-- Parent agent evaluates findings and decides fixes.
-
-### Step 4: Evaluate Review Findings
-
-When the review agent returns, YOU (the parent agent with full context) must evaluate each finding:
-
-For each issue, consider:
-
-1. **Is this actually a problem?** You have context the reviewer didn't.
-2. **Was this intentional?** If so, is the code clear enough that a reviewer shouldn't be confused?
-3. **Is the confidence justified?** High-confidence issues deserve more attention.
-
-Categorize findings into:
-
-- **Will fix**: Legitimate issues
-- **Won't fix**: False positives or intentional decisions
-- **Will clarify**: Code is correct but unclear (add comment or rename)
-
-### Step 5: Implement Fixes
-
-For issues you're fixing:
-
-1. Make the code change
-2. If the reviewer was confused by intentional code, consider adding a clarifying comment
-
-Do NOT fix:
-
-- Low-confidence nitpicks unless you agree
-- Style preferences not in CODEX.md
-- "Improvements" that change intended behavior
-
-If delegating code changes, use `spawn_agent` with `agent_type: worker` and assign explicit file
-ownership per worker to avoid conflicts.
-
-### Step 6: Commit Changes
-
-After implementing fixes, create a commit:
-
-```bash
-git add -A
-git commit -m "fix: address review findings
-
-- [list what was fixed]
-- [note any clarifying comments added]"
-```
-
-## Output
-
-Provide a summary:
-
-```
-## Review Summary
-
-**Findings from fresh-context review:** X issues
-
-### Fixed (Y issues)
-- [file:line] What was fixed
-
-### Not fixing (Z issues)
-- [file:line] Why (intentional/false positive/etc.)
-
-### Clarified (N issues)
-- [file:line] Added comment or renamed for clarity
-
-**Commit:** [hash] [message]
-```
-
-## Tips
-
-- If the reviewer flags something as confusing, even if correct, consider if the code could be
-  clearer
-- High-confidence issues (90+) should almost always be addressed
-- If you disagree with many findings, the code might need better documentation
-- You can run this multiple times - each review is fresh
+Do not commit by default. When the user explicitly requests a commit, validate first, stage only the
+intended changes, follow the commit skill, and report the commit hash. Never interpret invoking this
+skill alone as authorization to commit.

@@ -1,114 +1,117 @@
+# Optional examples only: policy/ is not an auto-loaded rules directory.
+# Prefix patterns match argv elements literally; no wildcard suffix is needed.
+
 prefix_rule(
-    pattern = ["mkdir", "*"],
+    pattern = ["mkdir"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["pnpm", "*"],
+    pattern = ["pnpm"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["npm", "*"],
+    pattern = ["npm"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["uv", "*"],
+    pattern = ["uv"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["git", "*"],
+    pattern = ["git"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["gh", "*"],
+    pattern = ["gh"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["ls", "*"],
+    pattern = ["ls"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["find", "*"],
+    pattern = ["find"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["jq", "*"],
+    pattern = ["jq"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["grep", "*"],
+    pattern = ["grep"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["sed", "*"],
+    pattern = ["sed"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["awk", "*"],
+    pattern = ["awk"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["sort", "*"],
+    pattern = ["sort"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["uniq", "*"],
+    pattern = ["uniq"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["wc", "*"],
+    pattern = ["wc"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["tail", "*"],
+    pattern = ["tail"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["head", "*"],
+    pattern = ["head"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["tee", "*"],
+    pattern = ["tee"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["tree", "*"],
+    pattern = ["tree"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["cat", "*"],
+    pattern = ["cat"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["touch", "*"],
+    pattern = ["touch"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["rm", "*"],
+    pattern = ["rm"],
     decision = "allow"
 )
 
 prefix_rule(
-    pattern = ["rg", "*"],
+    pattern = ["rg"],
     decision = "allow"
 )

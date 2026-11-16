@@ -13,7 +13,7 @@ from project memory files, skill definitions, documentation, and past conversati
 
 ## When This Skill Applies
 
-- User explicitly says "/qmd"
+- User explicitly says "$qmd"
 - User asks "what do I know about X?" or "have I dealt with X before?"
 - User wants to find past decisions, patterns, or context across projects
 

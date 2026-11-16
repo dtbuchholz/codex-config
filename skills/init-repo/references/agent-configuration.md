@@ -49,8 +49,9 @@ AGENTS.md natively.
 
 ### CODEX.md (optional)
 
-If your team uses Codex, add a `CODEX.md` file for Codex-specific project context. Keep AGENTS.md as
-the canonical source of shared agent standards. `CODEX.md` should stay minimal and either:
+Codex reads `AGENTS.md` by default. `CODEX.md` is a legacy filename and is only automatically read
+when listed in `project_doc_fallback_filenames` and no `AGENTS.md` exists. Keep AGENTS.md as the
+canonical source of shared agent standards. If preserving `CODEX.md`, keep it minimal and either:
 
 - point Codex users to read `AGENTS.md`, or
 - contain only Codex-specific deltas plus a note that shared standards live in `AGENTS.md`

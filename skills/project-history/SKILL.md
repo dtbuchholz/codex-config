@@ -4,10 +4,11 @@ description: >
   Reconstruct a project's evolution timeline from git history, learnings, decisions, and
   conversations (build mode), or evaluate how well the development process was documented (eval
   mode). Writes into docs/history/ alongside repo-docs structure.
-argument-hint: "[build|eval]"
 ---
 
 # Project History
+
+Arguments: `[build|eval]`.
 
 Mine git logs, learnings, decisions, and conversations to reconstruct a project's historical
 narrative or evaluate process documentation quality. Complements repo-docs by writing into its
@@ -15,8 +16,8 @@ narrative or evaluate process documentation quality. Complements repo-docs by wr
 
 ## When This Skill Applies
 
-- `/project-history` or `/project-history build` — reconstruct project timeline (default)
-- `/project-history eval` — evaluate process documentation quality
+- `$project-history` or `$project-history build` — reconstruct project timeline (default)
+- `$project-history eval` — evaluate process documentation quality
 - User asks to "trace the project history", "build a timeline", "how was this project built",
   "evaluate our process", "audit our documentation practices"
 
@@ -92,7 +93,7 @@ Present a source inventory table to the user:
 mkdir -p docs/history
 ```
 
-If `docs/` does not exist at all, suggest the user run `/repo-docs init` to set up the full docs
+If `docs/` does not exist at all, suggest the user run `$repo-docs init` to set up the full docs
 structure — but continue regardless.
 
 ### Step 3: Parallel Mining
@@ -413,7 +414,7 @@ Evidence from commits suggesting architectural decisions without formal ADRs:
 ### Ongoing Habits
 
 - [Process improvements to adopt, e.g., "capture a project-diary entry after each session"]
-- [Periodic reviews, e.g., "run /project-history eval monthly"]
+- [Periodic reviews, e.g., "run $project-history eval monthly"]
 ```
 
 ### Step 3: Present Results
@@ -423,7 +424,7 @@ Show the user a summary:
 - **Health Score: N/100** with letter grade
 - Dimension breakdown (one line each)
 - Top 3 actionable recommendations
-- If `docs/history/TIMELINE.md` does not exist, suggest: "Run `/project-history build` to
+- If `docs/history/TIMELINE.md` does not exist, suggest: "Run `$project-history build` to
   reconstruct your project timeline."
 
 ---

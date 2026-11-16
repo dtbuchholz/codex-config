@@ -53,3 +53,17 @@ computer-use/
 sqlite/
 vendor_imports/
 scripts/__pycache__/
+
+# Codex runtime state and downloaded plugins
+.sandbox_migration
+archived_sessions/
+attachments/
+chrome-native-hosts-v2.json
+memories_v2/
+plugins/
+process_manager/
+thread-writer-locks/
+__pycache__/
+mcp-oauth-locks/
+memories.lock
+tui-thread-reference-capabilities/

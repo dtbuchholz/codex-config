@@ -29,7 +29,7 @@ for ATTEMPT in 1 2 3; do
     --dangerously-bypass-approvals-and-sandbox \
     --skip-git-repo-check \
     -C "$HOME/.codex" \
-    "/memory-rollup" \
+    'Use $memory-rollup to maintain the current memory store, following the memory instructions in this session.' \
     >> "$LOG_FILE" 2>&1; then
     SUCCESS=1
     break

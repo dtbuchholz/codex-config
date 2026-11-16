@@ -73,11 +73,9 @@ ls ~/.codex/skills/ 2>/dev/null
 find ~/.codex/plugins -type d -name "skills" 2>/dev/null
 ```
 
-For each discovered skill:
-
-1. Read its SKILL.md to understand what it does
-2. Check if any plan sections match the skill's domain
-3. If matched, spawn a sub-agent to apply that skill's knowledge
+Use the current session's skill catalog first. Read a skill's SKILL.md only when its description
+matches a plan section; do not load every installed or cached skill. Delegate relevant research when
+the session supports subagents, otherwise perform the same focused research directly.
 
 ### 3. Discover Documented Learnings
 
@@ -99,7 +97,8 @@ For each learning file:
 
 ### 4. Launch Parallel Research Agents
 
-**CRITICAL: Launch ALL independent research with `spawn_agent` (`agent_type: explorer`).**
+Use available delegation tools for independent research. The examples below use `spawn_agent` and
+`explorer` when those are exposed by the session. Otherwise research the sections directly.
 
 Based on the plan's technologies and sections, spawn these agents IN PARALLEL:
 
@@ -127,11 +126,13 @@ Discover available review agents:
 
 ```bash
 # Find all agent definitions
-find ~/.codex -path "*/agents/*.md" 2>/dev/null
-find .codex/agents -name "*.md" 2>/dev/null
+find ~/.codex/agents -maxdepth 1 -name "*.toml" 2>/dev/null
+find .codex/agents -maxdepth 1 -name "*.toml" 2>/dev/null
 ```
 
-**Launch ALL review agents in parallel using `spawn_agent` with `agent_type: explorer`.**
+Launch relevant review agents using the session's available delegation tools. Built-in `explorer` is
+useful for read-heavy review when available. If delegation is unavailable, perform the review
+directly. Instruct reviewers to make no edits; roles inherit parent permissions.
 
 Use concise prompts for each reviewer:
 
@@ -169,7 +170,7 @@ Plan: [content]")
 
 - Launch independent agents in one parallel wave, then wait once
 - Each agent catches different issues
-- Don't filter by "relevance" - run them all
+- Select reviewers whose specialty affects the plan; avoid unrelated reviews.
 
 ### 6. Synthesize Findings
 
